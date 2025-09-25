@@ -1,0 +1,814 @@
+{% extends "base.html" %}
+
+{% block title %}Quản lý công việc - {{ app_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.task-priority-high { border-left: 4px solid #dc3545; }
+.task-priority-medium { border-left: 4px solid #ffc107; }
+.task-priority-low { border-left: 4px solid #28a745; }
+
+.task-status-pending { background-color: #f8f9fa; }
+.task-status-in_progress { background-color: #fff3cd; }
+.task-status-completed { background-color: #d1edff; }
+.task-status-cancelled { background-color: #f8d7da; }
+
+.task-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.task-actions {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.task-card:hover .task-actions {
+    opacity: 1;
+}
+
+.kanban-column {
+    min-height: 600px;
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+
+.kanban-column .card {
+    margin-bottom: 1rem;
+}
+
+.drag-over {
+    background-color: #e9ecef;
+    border: 2px dashed #adb5bd;
+}
+
+@media (max-width: 768px) {
+    .kanban-columns {
+        flex-direction: column;
+    }
+    
+    .kanban-column {
+        min-height: auto;
+        margin-bottom: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 text-primary mb-0">
+                    <i class="fas fa-tasks me-2"></i>Quản lý công việc
+                </h1>
+                <div class="d-flex gap-2">
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="viewMode" id="listView" checked>
+                        <label class="btn btn-outline-primary" for="listView">
+                            <i class="fas fa-list"></i> Danh sách
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="viewMode" id="kanbanView">
+                        <label class="btn btn-outline-primary" for="kanbanView">
+                            <i class="fas fa-columns"></i> Kanban
+                        </label>
+                    </div>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#taskModal" onclick="openTaskModal()">
+                        <i class="fas fa-plus me-2"></i>Thêm công việc
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body py-3">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <select class="form-select" id="teamFilter">
+                                <option value="">Tất cả nhóm</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select" id="statusFilter">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="pending">Chờ xử lý</option>
+                                <option value="in_progress">Đang thực hiện</option>
+                                <option value="completed">Hoàn thành</option>
+                                <option value="cancelled">Đã hủy</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select" id="priorityFilter">
+                                <option value="">Tất cả mức độ</option>
+                                <option value="high">Cao</option>
+                                <option value="medium">Trung bình</option>
+                                <option value="low">Thấp</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select" id="assigneeFilter">
+                                <option value="">Tất cả người thực hiện</option>
+                                <option value="me">Của tôi</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="searchInput" placeholder="Tìm kiếm công việc...">
+                                <button class="btn btn-outline-secondary" type="button" onclick="clearFilters()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- List View -->
+    <div id="listViewContainer">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div id="tasksContainer">
+                            <div class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="mt-2">Đang tải công việc...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kanban View -->
+    <div id="kanbanViewContainer" style="display: none;">
+        <div class="row kanban-columns">
+            <div class="col-md-3">
+                <div class="kanban-column" data-status="pending" ondrop="dropTask(event)" ondragover="allowDrop(event)">
+                    <h5 class="text-center mb-3">
+                        <i class="fas fa-clock text-warning me-2"></i>Chờ xử lý
+                        <span class="badge bg-warning ms-2" id="pendingCount">0</span>
+                    </h5>
+                    <div id="pendingTasks"></div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kanban-column" data-status="in_progress" ondrop="dropTask(event)" ondragover="allowDrop(event)">
+                    <h5 class="text-center mb-3">
+                        <i class="fas fa-play text-primary me-2"></i>Đang thực hiện
+                        <span class="badge bg-primary ms-2" id="inProgressCount">0</span>
+                    </h5>
+                    <div id="inProgressTasks"></div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kanban-column" data-status="completed" ondrop="dropTask(event)" ondragover="allowDrop(event)">
+                    <h5 class="text-center mb-3">
+                        <i class="fas fa-check text-success me-2"></i>Hoàn thành
+                        <span class="badge bg-success ms-2" id="completedCount">0</span>
+                    </h5>
+                    <div id="completedTasks"></div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kanban-column" data-status="cancelled" ondrop="dropTask(event)" ondragover="allowDrop(event)">
+                    <h5 class="text-center mb-3">
+                        <i class="fas fa-times text-danger me-2"></i>Đã hủy
+                        <span class="badge bg-danger ms-2" id="cancelledCount">0</span>
+                    </h5>
+                    <div id="cancelledTasks"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Task Modal -->
+<div class="modal fade" id="taskModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="taskModalTitle">
+                    <i class="fas fa-plus me-2"></i>Thêm công việc mới
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="taskForm">
+                <div class="modal-body">
+                    <input type="hidden" id="taskId" name="task_id">
+                    
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Tiêu đề <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="title" name="title" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="priority" class="form-label">Mức độ ưu tiên</label>
+                                <select class="form-select" id="priority" name="priority">
+                                    <option value="low">Thấp</option>
+                                    <option value="medium" selected>Trung bình</option>
+                                    <option value="high">Cao</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Mô tả</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Trạng thái</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="pending">Chờ xử lý</option>
+                                    <option value="in_progress">Đang thực hiện</option>
+                                    <option value="completed">Hoàn thành</option>
+                                    <option value="cancelled">Đã hủy</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="team_id" class="form-label">Nhóm</label>
+                                <select class="form-select" id="team_id" name="team_id">
+                                    <option value="">Không thuộc nhóm</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="assigned_to" class="form-label">Giao cho</label>
+                                <select class="form-select" id="assigned_to" name="assigned_to">
+                                    <option value="">Chưa giao</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="due_date" class="form-label">Hạn hoàn thành</label>
+                                <input type="datetime-local" class="form-control" id="due_date" name="due_date">
+                            </div>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_recurring" name="is_recurring">
+                                <label class="form-check-label" for="is_recurring">
+                                    Công việc định kỳ
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary" id="saveTaskBtn">
+                        <i class="fas fa-save me-2"></i>Lưu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Task Detail Modal -->
+<div class="modal fade" id="taskDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-info-circle me-2"></i>Chi tiết công việc
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="taskDetailContent">
+                <!-- Task details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" onclick="editCurrentTask()">
+                    <i class="fas fa-edit me-2"></i>Chỉnh sửa
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let allTasks = [];
+let allTeams = [];
+let allUsers = [];
+let currentTask = null;
+let draggedTask = null;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', async function() {
+    if (!todoApp.user) {
+        await todoApp.getCurrentUser();
+    }
+    
+    if (!todoApp.user) {
+        window.location.href = '/login';
+        return;
+    }
+    
+    await loadInitialData();
+    setupEventListeners();
+    loadTasks();
+});
+
+async function loadInitialData() {
+    try {
+        // Load teams and users for filters and assignments
+        allTeams = await todoApp.getTeams();
+        
+        // Populate team filter and task form
+        const teamFilter = document.getElementById('teamFilter');
+        const teamSelect = document.getElementById('team_id');
+        
+        allTeams.forEach(team => {
+            const option1 = new Option(team.name, team.id);
+            const option2 = new Option(team.name, team.id);
+            teamFilter.appendChild(option1);
+            teamSelect.appendChild(option2);
+        });
+        
+        // Load team members for assignment
+        if (allTeams.length > 0) {
+            await loadTeamMembers();
+        }
+        
+    } catch (error) {
+        console.error('Load initial data error:', error);
+    }
+}
+
+async function loadTeamMembers() {
+    const assigneeFilter = document.getElementById('assigneeFilter');
+    const assignedToSelect = document.getElementById('assigned_to');
+    
+    // Clear existing options except default ones
+    assigneeFilter.innerHTML = '<option value="">Tất cả người thực hiện</option><option value="me">Của tôi</option>';
+    assignedToSelect.innerHTML = '<option value="">Chưa giao</option>';
+    
+    try {
+        for (const team of allTeams) {
+            const members = await todoApp.getTeamMembers(team.id);
+            members.forEach(member => {
+                const option1 = new Option(`${member.full_name || member.username} (${team.name})`, member.id);
+                const option2 = new Option(`${member.full_name || member.username}`, member.id);
+                assigneeFilter.appendChild(option1);
+                assignedToSelect.appendChild(option2);
+            });
+        }
+    } catch (error) {
+        console.error('Load team members error:', error);
+    }
+}
+
+async function loadTasks() {
+    try {
+        allTasks = await todoApp.getTasks();
+        displayTasks();
+        updateTaskCounts();
+    } catch (error) {
+        document.getElementById('tasksContainer').innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                <h5>Không thể tải danh sách công việc</h5>
+                <p class="text-muted">${error.message}</p>
+                <button class="btn btn-primary" onclick="loadTasks()">Thử lại</button>
+            </div>
+        `;
+    }
+}
+
+function displayTasks() {
+    const filteredTasks = filterTasks();
+    const currentView = document.querySelector('input[name="viewMode"]:checked').id;
+    
+    if (currentView === 'listView') {
+        displayListView(filteredTasks);
+    } else {
+        displayKanbanView(filteredTasks);
+    }
+}
+
+function filterTasks() {
+    let filtered = [...allTasks];
+    
+    const teamFilter = document.getElementById('teamFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    const priorityFilter = document.getElementById('priorityFilter').value;
+    const assigneeFilter = document.getElementById('assigneeFilter').value;
+    const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+    
+    if (teamFilter) {
+        filtered = filtered.filter(task => task.team_id == teamFilter);
+    }
+    
+    if (statusFilter) {
+        filtered = filtered.filter(task => task.status === statusFilter);
+    }
+    
+    if (priorityFilter) {
+        filtered = filtered.filter(task => task.priority === priorityFilter);
+    }
+    
+    if (assigneeFilter === 'me') {
+        filtered = filtered.filter(task => task.assigned_to == todoApp.user.id);
+    } else if (assigneeFilter) {
+        filtered = filtered.filter(task => task.assigned_to == assigneeFilter);
+    }
+    
+    if (searchQuery) {
+        filtered = filtered.filter(task => 
+            task.title.toLowerCase().includes(searchQuery) ||
+            (task.description && task.description.toLowerCase().includes(searchQuery))
+        );
+    }
+    
+    return filtered;
+}
+
+function displayListView(tasks) {
+    const container = document.getElementById('tasksContainer');
+    
+    if (tasks.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                <h5>Không có công việc nào</h5>
+                <p class="text-muted">Tạo công việc mới để bắt đầu</p>
+                <button class="btn btn-primary" onclick="openTaskModal()">
+                    <i class="fas fa-plus me-2"></i>Thêm công việc
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = tasks.map(task => createTaskCard(task, false)).join('');
+}
+
+function displayKanbanView(tasks) {
+    const statuses = ['pending', 'in_progress', 'completed', 'cancelled'];
+    
+    statuses.forEach(status => {
+        const statusTasks = tasks.filter(task => task.status === status);
+        const container = document.getElementById(`${status.replace('_', '')}Tasks`);
+        container.innerHTML = statusTasks.map(task => createTaskCard(task, true)).join('');
+    });
+}
+
+function createTaskCard(task, isDraggable = false) {
+    const priorityClass = `task-priority-${task.priority}`;
+    const statusClass = `task-status-${task.status}`;
+    const overdueBadge = isOverdue(task) ? '<span class="badge bg-danger ms-2">Quá hạn</span>' : '';
+    
+    const assigneeName = task.assigned_to ? 
+        (allUsers.find(u => u.id == task.assigned_to)?.full_name || 'Unknown') : 
+        'Chưa giao';
+    
+    const teamName = task.team_id ? 
+        (allTeams.find(t => t.id == task.team_id)?.name || 'Unknown') : 
+        'Không thuộc nhóm';
+    
+    const dragAttributes = isDraggable ? 
+        `draggable="true" ondragstart="dragStart(event)" data-task-id="${task.id}"` : '';
+    
+    return `
+        <div class="card task-card mb-3 ${priorityClass} ${statusClass}" ${dragAttributes}>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title mb-2" onclick="viewTaskDetail(${task.id})">
+                            ${task.title}
+                            ${overdueBadge}
+                        </h6>
+                        ${task.description ? `<p class="card-text text-muted small">${task.description.substring(0, 100)}${task.description.length > 100 ? '...' : ''}</p>` : ''}
+                        
+                        <div class="d-flex flex-wrap gap-2 mb-2">
+                            <span class="badge bg-${getPriorityColor(task.priority)}">${getPriorityText(task.priority)}</span>
+                            <span class="badge bg-${getStatusColor(task.status)}">${getStatusText(task.status)}</span>
+                            ${task.team_id ? `<span class="badge bg-info">${teamName}</span>` : ''}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="fas fa-user me-1"></i>${assigneeName}
+                                ${task.due_date ? `<i class="fas fa-calendar ms-3 me-1"></i>${formatDate(task.due_date)}` : ''}
+                            </small>
+                            <div class="task-actions">
+                                <button class="btn btn-sm btn-outline-primary" onclick="editTask(${task.id})" title="Chỉnh sửa">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteTask(${task.id})" title="Xóa">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function updateTaskCounts() {
+    const counts = {
+        pending: allTasks.filter(t => t.status === 'pending').length,
+        in_progress: allTasks.filter(t => t.status === 'in_progress').length,
+        completed: allTasks.filter(t => t.status === 'completed').length,
+        cancelled: allTasks.filter(t => t.status === 'cancelled').length
+    };
+    
+    document.getElementById('pendingCount').textContent = counts.pending;
+    document.getElementById('inProgressCount').textContent = counts.in_progress;
+    document.getElementById('completedCount').textContent = counts.completed;
+    document.getElementById('cancelledCount').textContent = counts.cancelled;
+}
+
+// Task Operations
+function openTaskModal(taskId = null) {
+    currentTask = taskId ? allTasks.find(t => t.id == taskId) : null;
+    
+    const modal = document.getElementById('taskModal');
+    const title = document.getElementById('taskModalTitle');
+    const form = document.getElementById('taskForm');
+    
+    if (currentTask) {
+        title.innerHTML = '<i class="fas fa-edit me-2"></i>Chỉnh sửa công việc';
+        populateTaskForm(currentTask);
+    } else {
+        title.innerHTML = '<i class="fas fa-plus me-2"></i>Thêm công việc mới';
+        form.reset();
+        document.getElementById('taskId').value = '';
+    }
+    
+    new bootstrap.Modal(modal).show();
+}
+
+function populateTaskForm(task) {
+    document.getElementById('taskId').value = task.id;
+    document.getElementById('title').value = task.title;
+    document.getElementById('description').value = task.description || '';
+    document.getElementById('priority').value = task.priority;
+    document.getElementById('status').value = task.status;
+    document.getElementById('team_id').value = task.team_id || '';
+    document.getElementById('assigned_to').value = task.assigned_to || '';
+    document.getElementById('is_recurring').checked = task.is_recurring;
+    
+    if (task.due_date) {
+        const dueDate = new Date(task.due_date);
+        document.getElementById('due_date').value = dueDate.toISOString().slice(0, 16);
+    }
+}
+
+async function saveTask() {
+    const form = document.getElementById('taskForm');
+    const formData = new FormData(form);
+    
+    const taskData = {
+        title: formData.get('title'),
+        description: formData.get('description'),
+        priority: formData.get('priority'),
+        status: formData.get('status'),
+        team_id: formData.get('team_id') || null,
+        assigned_to: formData.get('assigned_to') || null,
+        due_date: formData.get('due_date') || null,
+        is_recurring: formData.get('is_recurring') === 'on'
+    };
+    
+    try {
+        const taskId = formData.get('task_id');
+        
+        if (taskId) {
+            await todoApp.updateTask(taskId, taskData);
+            todoApp.showToast('Cập nhật công việc thành công!', 'success');
+        } else {
+            await todoApp.createTask(taskData);
+            todoApp.showToast('Tạo công việc thành công!', 'success');
+        }
+        
+        bootstrap.Modal.getInstance(document.getElementById('taskModal')).hide();
+        await loadTasks();
+        
+    } catch (error) {
+        todoApp.showToast(error.message, 'error');
+    }
+}
+
+function editTask(taskId) {
+    openTaskModal(taskId);
+}
+
+async function deleteTask(taskId) {
+    if (!confirm('Bạn có chắc chắn muốn xóa công việc này?')) return;
+    
+    try {
+        await todoApp.deleteTask(taskId);
+        todoApp.showToast('Xóa công việc thành công!', 'success');
+        await loadTasks();
+    } catch (error) {
+        todoApp.showToast(error.message, 'error');
+    }
+}
+
+async function viewTaskDetail(taskId) {
+    const task = allTasks.find(t => t.id == taskId);
+    if (!task) return;
+    
+    currentTask = task;
+    const assigneeName = task.assigned_to ? 
+        (allUsers.find(u => u.id == task.assigned_to)?.full_name || 'Unknown') : 
+        'Chưa giao';
+    
+    const teamName = task.team_id ? 
+        (allTeams.find(t => t.id == task.team_id)?.name || 'Unknown') : 
+        'Không thuộc nhóm';
+    
+    const content = `
+        <div class="task-detail">
+            <h4>${task.title}</h4>
+            ${task.description ? `<p class="text-muted">${task.description}</p>` : ''}
+            
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <h6>Thông tin cơ bản</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>Trạng thái:</strong> <span class="badge bg-${getStatusColor(task.status)}">${getStatusText(task.status)}</span></li>
+                        <li><strong>Mức độ:</strong> <span class="badge bg-${getPriorityColor(task.priority)}">${getPriorityText(task.priority)}</span></li>
+                        <li><strong>Nhóm:</strong> ${teamName}</li>
+                        <li><strong>Người thực hiện:</strong> ${assigneeName}</li>
+                        ${task.due_date ? `<li><strong>Hạn hoàn thành:</strong> ${formatDate(task.due_date)}</li>` : ''}
+                        <li><strong>Định kỳ:</strong> ${task.is_recurring ? 'Có' : 'Không'}</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>Thời gian</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>Tạo lúc:</strong> ${formatDate(task.created_at)}</li>
+                        <li><strong>Cập nhật:</strong> ${formatDate(task.updated_at)}</li>
+                        ${task.completed_at ? `<li><strong>Hoàn thành:</strong> ${formatDate(task.completed_at)}</li>` : ''}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('taskDetailContent').innerHTML = content;
+    new bootstrap.Modal(document.getElementById('taskDetailModal')).show();
+}
+
+function editCurrentTask() {
+    if (currentTask) {
+        bootstrap.Modal.getInstance(document.getElementById('taskDetailModal')).hide();
+        setTimeout(() => openTaskModal(currentTask.id), 300);
+    }
+}
+
+// Drag and Drop Functions
+function allowDrop(ev) {
+    ev.preventDefault();
+    ev.currentTarget.classList.add('drag-over');
+}
+
+function dragStart(ev) {
+    draggedTask = parseInt(ev.target.getAttribute('data-task-id'));
+    ev.dataTransfer.setData("text/plain", draggedTask);
+}
+
+async function dropTask(ev) {
+    ev.preventDefault();
+    ev.currentTarget.classList.remove('drag-over');
+    
+    const newStatus = ev.currentTarget.getAttribute('data-status');
+    const taskId = ev.dataTransfer.getData("text/plain");
+    
+    if (!taskId || !newStatus) return;
+    
+    try {
+        await todoApp.updateTask(taskId, { status: newStatus });
+        await loadTasks();
+        todoApp.showToast('Cập nhật trạng thái thành công!', 'success');
+    } catch (error) {
+        todoApp.showToast(error.message, 'error');
+    }
+}
+
+// Event Listeners
+function setupEventListeners() {
+    // View mode toggle
+    document.querySelectorAll('input[name="viewMode"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const listView = document.getElementById('listViewContainer');
+            const kanbanView = document.getElementById('kanbanViewContainer');
+            
+            if (this.id === 'listView') {
+                listView.style.display = 'block';
+                kanbanView.style.display = 'none';
+            } else {
+                listView.style.display = 'none';
+                kanbanView.style.display = 'block';
+            }
+            
+            displayTasks();
+        });
+    });
+    
+    // Filters
+    ['teamFilter', 'statusFilter', 'priorityFilter', 'assigneeFilter', 'searchInput'].forEach(id => {
+        document.getElementById(id).addEventListener('change', displayTasks);
+    });
+    
+    document.getElementById('searchInput').addEventListener('input', displayTasks);
+    
+    // Task form
+    document.getElementById('taskForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveTask();
+    });
+    
+    // Drag over event cleanup
+    document.querySelectorAll('.kanban-column').forEach(column => {
+        column.addEventListener('dragleave', function(e) {
+            if (!this.contains(e.relatedTarget)) {
+                this.classList.remove('drag-over');
+            }
+        });
+    });
+}
+
+// Utility Functions
+function clearFilters() {
+    document.getElementById('teamFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('priorityFilter').value = '';
+    document.getElementById('assigneeFilter').value = '';
+    document.getElementById('searchInput').value = '';
+    displayTasks();
+}
+
+function isOverdue(task) {
+    if (!task.due_date || task.status === 'completed') return false;
+    return new Date(task.due_date) < new Date();
+}
+
+function getPriorityColor(priority) {
+    const colors = { high: 'danger', medium: 'warning', low: 'success' };
+    return colors[priority] || 'secondary';
+}
+
+function getPriorityText(priority) {
+    const texts = { high: 'Cao', medium: 'Trung bình', low: 'Thấp' };
+    return texts[priority] || priority;
+}
+
+function getStatusColor(status) {
+    const colors = {
+        pending: 'warning',
+        in_progress: 'primary',
+        completed: 'success',
+        cancelled: 'danger'
+    };
+    return colors[status] || 'secondary';
+}
+
+function getStatusText(status) {
+    const texts = {
+        pending: 'Chờ xử lý',
+        in_progress: 'Đang thực hiện',
+        completed: 'Hoàn thành',
+        cancelled: 'Đã hủy'
+    };
+    return texts[status] || status;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Không tìm thấy trang - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="text-center py-5">
+                <!-- 404 Illustration -->
+                <div class="mb-4">
+                    <svg width="200" height="150" viewBox="0 0 200 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Background -->
+                        <rect width="200" height="150" fill="#f8f9fa"/>
+                        
+                        <!-- 404 Text -->
+                        <text x="100" y="80" text-anchor="middle" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#dc3545">404</text>
+                        
+                        <!-- Sad face -->
+                        <circle cx="100" cy="50" r="25" fill="none" stroke="#6c757d" stroke-width="2"/>
+                        <circle cx="92" cy="45" r="2" fill="#6c757d"/>
+                        <circle cx="108" cy="45" r="2" fill="#6c757d"/>
+                        <path d="M85 60 Q100 70 115 60" stroke="#6c757d" stroke-width="2" fill="none"/>
+                        
+                        <!-- Broken link icon -->
+                        <g transform="translate(160, 110)">
+                            <rect x="0" y="0" width="30" height="20" rx="3" fill="none" stroke="#dc3545" stroke-width="2"/>
+                            <line x1="8" y1="8" x2="22" y2="12" stroke="#dc3545" stroke-width="2"/>
+                        </g>
+                    </svg>
+                </div>
+
+                <h1 class="display-4 text-primary mb-3">Oops!</h1>
+                <h2 class="h4 text-muted mb-4">Không tìm thấy trang</h2>
+                
+                <p class="lead text-muted mb-4">
+                    Trang bạn đang tìm kiếm có thể đã bị xóa, di chuyển hoặc không tồn tại. 
+                    Hãy kiểm tra lại URL hoặc quay về trang chủ.
+                </p>
+
+                <!-- Quick Actions -->
+                <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center mb-4">
+                    <a href="/" class="btn btn-primary">
+                        <i class="fas fa-home me-2"></i>Về trang chủ
+                    </a>
+                    <button class="btn btn-outline-secondary" onclick="history.back()">
+                        <i class="fas fa-arrow-left me-2"></i>Quay lại
+                    </button>
+                    <button class="btn btn-outline-info" onclick="location.reload()">
+                        <i class="fas fa-refresh me-2"></i>Tải lại trang
+                    </button>
+                </div>
+
+                <!-- Search Box -->
+                <div class="card border-0 bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title">Tìm kiếm nhanh</h6>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="searchInput" placeholder="Tìm kiếm công việc, nhóm...">
+                            <button class="btn btn-outline-primary" type="button" onclick="quickSearch()">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="mt-4">
+                    <h6 class="text-muted mb-3">Liên kết hữu ích</h6>
+                    <div class="d-flex flex-wrap gap-2 justify-content-center">
+                        <a href="/dashboard" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                        </a>
+                        <a href="/tasks" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-tasks me-1"></i>Công việc
+                        </a>
+                        <a href="/teams" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-users me-1"></i>Nhóm
+                        </a>
+                        <a href="/profile" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-user me-1"></i>Hồ sơ
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Contact Support -->
+                <div class="mt-5 pt-4 border-top">
+                    <p class="text-muted small">
+                        Vẫn gặp vấn đề? 
+                        <a href="mailto:support@todoapp.com" class="text-decoration-none">
+                            Liên hệ hỗ trợ
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Additional CSS for animations -->
+<style>
+.display-4 {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.lead {
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.btn {
+    animation: fadeInUp 1s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: fadeIn 1.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Hover effects */
+.btn:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease;
+}
+
+svg {
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function quickSearch() {
+    const query = document.getElementById('searchInput').value.trim();
+    if (query) {
+        // Redirect to search page or dashboard with search query
+        window.location.href = `/dashboard?search=${encodeURIComponent(query)}`;
+    }
+}
+
+// Allow Enter key in search
+document.getElementById('searchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        quickSearch();
+    }
+});
+
+// Auto-focus search input after page load
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        document.getElementById('searchInput').focus();
+    }, 1000);
+});
+
+// Track 404 errors for analytics (if needed)
+if (typeof gtag !== 'undefined') {
+    gtag('event', 'page_not_found', {
+        'page_location': window.location.href,
+        'page_title': '404 - Page Not Found'
+    });
+}
+</script>
+{% endblock %}

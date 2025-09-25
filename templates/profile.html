@@ -1,0 +1,556 @@
+{% extends "base.html" %}
+
+{% block title %}Hồ sơ cá nhân - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h3 text-primary mb-4">
+                <i class="fas fa-user-cog me-2"></i>Hồ sơ cá nhân
+            </h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Profile Information -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-user me-2"></i>Thông tin cá nhân</h5>
+                </div>
+                <div class="card-body">
+                    <form id="profileForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">Tên đăng nhập</label>
+                                    <input type="text" class="form-control" id="username" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="full_name" class="form-label">Họ và tên</label>
+                                    <input type="text" class="form-control" id="full_name" name="full_name">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="phone_number" class="form-label">Số điện thoại</label>
+                                    <input type="tel" class="form-control" id="phone_number" name="phone_number">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="role" class="form-label">Vai trò</label>
+                            <input type="text" class="form-control" id="role" readonly>
+                        </div>
+                        
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Cập nhật thông tin
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Change Password -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-lock me-2"></i>Đổi mật khẩu</h5>
+                </div>
+                <div class="card-body">
+                    <form id="changePasswordForm">
+                        <div class="mb-3">
+                            <label for="current_password" class="form-label">Mật khẩu hiện tại</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="current_password" name="current_password" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('current_password')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="new_password" class="form-label">Mật khẩu mới</label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="new_password" name="new_password" required>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('new_password')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="confirm_new_password" class="form-label">Xác nhận mật khẩu mới</label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="confirm_new_password" name="confirm_new_password" required>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirm_new_password')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-key me-2"></i>Đổi mật khẩu
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Settings -->
+        <div class="col-lg-4">
+            <!-- 2FA Setup -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>Xác thực 2 yếu tố (2FA)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="twoFactorStatus">
+                        <div class="text-center py-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Đang tải...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Statistics -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Thống kê tài khoản</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Ngày tham gia:</span>
+                        <strong id="joinDate">-</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Lần đăng nhập cuối:</span>
+                        <strong id="lastLogin">-</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Tổng công việc:</span>
+                        <strong id="totalTasks">0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Công việc hoàn thành:</span>
+                        <strong id="completedTasks">0</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Hành động tài khoản</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-secondary" onclick="exportData()">
+                            <i class="fas fa-download me-2"></i>Xuất dữ liệu
+                        </button>
+                        <button class="btn btn-outline-warning" onclick="deactivateAccount()">
+                            <i class="fas fa-user-slash me-2"></i>Vô hiệu hóa tài khoản
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="deleteAccount()">
+                            <i class="fas fa-trash me-2"></i>Xóa tài khoản
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2FA Setup Modal -->
+<div class="modal fade" id="setup2FAModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-shield-alt me-2"></i>Thiết lập xác thực 2 yếu tố
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="setup2FAStep1">
+                    <h6>Bước 1: Cài đặt ứng dụng Authenticator</h6>
+                    <p>Tải và cài đặt một trong các ứng dụng sau:</p>
+                    <ul>
+                        <li><strong>Google Authenticator</strong> (iOS/Android)</li>
+                        <li><strong>Microsoft Authenticator</strong> (iOS/Android)</li>  
+                        <li><strong>Authy</strong> (iOS/Android/Desktop)</li>
+                    </ul>
+                    
+                    <h6 class="mt-4">Bước 2: Quét mã QR</h6>
+                    <div class="qr-code-container" id="qrCodeContainer">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary"></div>
+                            <p class="mt-2">Đang tạo mã QR...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Mã backup:</strong> Lưu các mã backup dưới đây ở nơi an toàn. 
+                        Bạn có thể sử dụng chúng nếu mất thiết bị.
+                    </div>
+                    
+                    <div class="backup-codes" id="backupCodes" style="display: none;">
+                        <ul id="backupCodesList"></ul>
+                    </div>
+                </div>
+                
+                <div id="setup2FAStep2" style="display: none;">
+                    <h6>Bước 3: Xác thực thiết lập</h6>
+                    <p>Nhập mã 6 số từ ứng dụng Authenticator để hoàn tất thiết lập:</p>
+                    
+                    <form id="verify2FAForm">
+                        <div class="mb-3">
+                            <label for="verification_code" class="form-label">Mã xác thực</label>
+                            <input type="text" class="form-control text-center" id="verification_code" 
+                                   name="totp_code" maxlength="6" pattern="[0-9]{6}" required
+                                   style="font-size: 1.5rem; letter-spacing: 0.5rem;">
+                            <div class="form-text">Nhập 6 chữ số từ ứng dụng Authenticator</div>
+                        </div>
+                        
+                        <div class="text-end">
+                            <button type="button" class="btn btn-secondary me-2" onclick="show2FAStep1()">
+                                <i class="fas fa-arrow-left me-2"></i>Quay lại
+                            </button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check me-2"></i>Hoàn tất thiết lập
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" id="nextStep2FA" onclick="show2FAStep2()">
+                    <i class="fas fa-arrow-right me-2"></i>Tiếp tục
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Disable 2FA Modal -->
+<div class="modal fade" id="disable2FAModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-shield-alt me-2"></i>Tắt xác thực 2 yếu tố
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="disable2FAForm">
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Cảnh báo:</strong> Tắt 2FA sẽ làm giảm bảo mật tài khoản của bạn.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="disable_verification_code" class="form-label">Mã xác thực</label>
+                        <input type="text" class="form-control text-center" id="disable_verification_code" 
+                               name="totp_code" maxlength="6" pattern="[0-9]{6}" required>
+                        <div class="form-text">Nhập mã từ ứng dụng Authenticator để xác nhận</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-times me-2"></i>Tắt 2FA
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentUser = null;
+
+// Initialize profile page
+document.addEventListener('DOMContentLoaded', async function() {
+    if (!todoApp.user) {
+        await todoApp.getCurrentUser();
+    }
+    
+    currentUser = todoApp.user;
+    if (!currentUser) {
+        window.location.href = '/login';
+        return;
+    }
+    
+    loadUserProfile();
+    load2FAStatus();
+    loadAccountStats();
+    setupEventListeners();
+});
+
+function loadUserProfile() {
+    if (!currentUser) return;
+    
+    document.getElementById('email').value = currentUser.email || '';
+    document.getElementById('username').value = currentUser.username || '';
+    document.getElementById('full_name').value = currentUser.full_name || '';
+    document.getElementById('phone_number').value = currentUser.phone_number || '';
+    document.getElementById('role').value = getRoleText(currentUser.role);
+    
+    // Account statistics
+    document.getElementById('joinDate').textContent = formatDate(currentUser.created_at);
+    document.getElementById('lastLogin').textContent = currentUser.last_login ? 
+        formatDate(currentUser.last_login) : 'Chưa đăng nhập';
+}
+
+function load2FAStatus() {
+    const statusContainer = document.getElementById('twoFactorStatus');
+    
+    if (currentUser.is_2fa_enabled) {
+        statusContainer.innerHTML = `
+            <div class="text-center">
+                <div class="mb-3">
+                    <i class="fas fa-shield-alt fa-3x text-success"></i>
+                </div>
+                <h6 class="text-success">2FA đã được bật</h6>
+                <p class="text-muted small">Tài khoản của bạn được bảo vệ bởi xác thực 2 yếu tố</p>
+                <button class="btn btn-danger btn-sm" onclick="openDisable2FAModal()">
+                    <i class="fas fa-times me-2"></i>Tắt 2FA
+                </button>
+            </div>
+        `;
+    } else {
+        statusContainer.innerHTML = `
+            <div class="text-center">
+                <div class="mb-3">
+                    <i class="fas fa-shield-alt fa-3x text-warning"></i>
+                </div>
+                <h6 class="text-warning">2FA chưa được bật</h6>
+                <p class="text-muted small">Bật 2FA để tăng cường bảo mật tài khoản</p>
+                <button class="btn btn-success btn-sm" onclick="openSetup2FAModal()">
+                    <i class="fas fa-plus me-2"></i>Bật 2FA
+                </button>
+            </div>
+        `;
+    }
+}
+
+async function loadAccountStats() {
+    try {
+        const tasks = await todoApp.getTasks();
+        const completedTasks = tasks.filter(t => t.status === 'completed');
+        
+        document.getElementById('totalTasks').textContent = tasks.length;
+        document.getElementById('completedTasks').textContent = completedTasks.length;
+    } catch (error) {
+        console.error('Load account stats error:', error);
+    }
+}
+
+// 2FA Setup Functions
+async function openSetup2FAModal() {
+    const modal = new bootstrap.Modal(document.getElementById('setup2FAModal'));
+    modal.show();
+    
+    try {
+        const response = await todoApp.enable2FA();
+        
+        // Show QR code
+        const qrContainer = document.getElementById('qrCodeContainer');
+        qrContainer.innerHTML = `<img src="${response.qr_code}" alt="QR Code" class="img-fluid">`;
+        
+        // Show backup codes
+        const backupCodesContainer = document.getElementById('backupCodes');
+        const backupCodesList = document.getElementById('backupCodesList');
+        
+        backupCodesList.innerHTML = response.backup_codes.map(code => 
+            `<li>${code}</li>`
+        ).join('');
+        
+        backupCodesContainer.style.display = 'block';
+        
+    } catch (error) {
+        modal.hide();
+    }
+}
+
+function show2FAStep2() {
+    document.getElementById('setup2FAStep1').style.display = 'none';
+    document.getElementById('setup2FAStep2').style.display = 'block';
+    document.getElementById('nextStep2FA').style.display = 'none';
+}
+
+function show2FAStep1() {
+    document.getElementById('setup2FAStep1').style.display = 'block';
+    document.getElementById('setup2FAStep2').style.display = 'none';
+    document.getElementById('nextStep2FA').style.display = 'block';
+}
+
+function openDisable2FAModal() {
+    const modal = new bootstrap.Modal(document.getElementById('disable2FAModal'));
+    modal.show();
+}
+
+// Event Listeners
+function setupEventListeners() {
+    // Profile form
+    document.getElementById('profileForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const updateData = {
+            full_name: formData.get('full_name'),
+            phone_number: formData.get('phone_number')
+        };
+        
+        try {
+            await todoApp.apiCall('/auth/me', 'PUT', updateData);
+            await todoApp.getCurrentUser();
+            currentUser = todoApp.user;
+            todoApp.showToast('Cập nhật thông tin thành công!', 'success');
+        } catch (error) {
+            todoApp.showToast(error.message, 'error');
+        }
+    });
+    
+    // Change password form
+    document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const newPassword = formData.get('new_password');
+        const confirmPassword = formData.get('confirm_new_password');
+        
+        if (newPassword !== confirmPassword) {
+            todoApp.showToast('Mật khẩu mới không khớp', 'error');
+            return;
+        }
+        
+        const changeData = {
+            current_password: formData.get('current_password'),
+            new_password: newPassword
+        };
+        
+        try {
+            await todoApp.apiCall('/auth/change-password', 'POST', changeData);
+            this.reset();
+            todoApp.showToast('Đổi mật khẩu thành công!', 'success');
+        } catch (error) {
+            todoApp.showToast(error.message, 'error');
+        }
+    });
+    
+    // Verify 2FA form
+    document.getElementById('verify2FAForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const totpCode = formData.get('totp_code');
+        
+        try {
+            await todoApp.verify2FA(totpCode);
+            bootstrap.Modal.getInstance(document.getElementById('setup2FAModal')).hide();
+            await todoApp.getCurrentUser();
+            currentUser = todoApp.user;
+            load2FAStatus();
+        } catch (error) {
+            // Error already handled in todoApp.verify2FA
+        }
+    });
+    
+    // Disable 2FA form
+    document.getElementById('disable2FAForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const totpCode = formData.get('totp_code');
+        
+        try {
+            await todoApp.disable2FA(totpCode);
+            bootstrap.Modal.getInstance(document.getElementById('disable2FAModal')).hide();
+            await todoApp.getCurrentUser();
+            currentUser = todoApp.user;
+            load2FAStatus();
+        } catch (error) {
+            // Error already handled in todoApp.disable2FA
+        }
+    });
+}
+
+// Utility Functions
+function togglePassword(fieldId) {
+    const field = document.getElementById(fieldId);
+    const icon = field.nextElementSibling.querySelector('i');
+    
+    if (field.type === 'password') {
+        field.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+        field.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+    }
+}
+
+function getRoleText(role) {
+    const roleTexts = {
+        'team_manager': 'Team Manager - Quản lý nhóm',
+        'team_member': 'Team Member - Thành viên nhóm'
+    };
+    return roleTexts[role] || role;
+}
+
+// Account Actions
+function exportData() {
+    todoApp.showToast('Tính năng xuất dữ liệu sẽ được cập nhật sớm', 'info');
+}
+
+function deactivateAccount() {
+    if (confirm('Bạn có chắc chắn muốn vô hiệu hóa tài khoản? Bạn sẽ không thể đăng nhập cho đến khi kích hoạt lại.')) {
+        todoApp.showToast('Tính năng vô hiệu hóa tài khoản sẽ được cập nhật sớm', 'info');
+    }
+}
+
+function deleteAccount() {
+    if (confirm('CẢNH BÁO: Xóa tài khoản sẽ xóa vĩnh viễn tất cả dữ liệu của bạn. Hành động này không thể hoàn tác!\n\nBạn có chắc chắn muốn xóa tài khoản?')) {
+        todoApp.showToast('Tính năng xóa tài khoản sẽ được cập nhật sớm', 'warning');
+    }
+}
+
+// Format verification code input
+document.getElementById('verification_code').addEventListener('input', function(e) {
+    e.target.value = e.target.value.replace(/\D/g, '');
+});
+
+document.getElementById('disable_verification_code').addEventListener('input', function(e) {
+    e.target.value = e.target.value.replace(/\D/g, '');
+});
+</script>
+{% endblock %}

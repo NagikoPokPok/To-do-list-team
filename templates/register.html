@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+
+{% block title %}Đăng ký - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="auth-container d-flex align-items-center">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="auth-card card shadow-lg">
+                    <div class="card-body p-5">
+                        <div class="auth-header">
+                            <h2><i class="fas fa-user-plus me-2"></i>Đăng ký</h2>
+                            <p>Tạo tài khoản {{ app_name }} miễn phí</p>
+                        </div>
+
+                        <form id="registerForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="email" class="form-label">Email *</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">
+                                                <i class="fas fa-envelope"></i>
+                                            </span>
+                                            <input type="email" class="form-control" id="email" name="email" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="username" class="form-label">Tên đăng nhập *</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">
+                                                <i class="fas fa-user"></i>
+                                            </span>
+                                            <input type="text" class="form-control" id="username" name="username" 
+                                                   minlength="3" maxlength="50" required>
+                                        </div>
+                                        <div class="form-text">3-50 ký tự, không chứa khoảng trắng</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="full_name" class="form-label">Họ và tên</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-id-card"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="full_name" name="full_name">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="phone_number" class="form-label">Số điện thoại</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-phone"></i>
+                                    </span>
+                                    <input type="tel" class="form-control" id="phone_number" name="phone_number">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="role" class="form-label">Vai trò *</label>
+                                <select class="form-select" id="role" name="role" required>
+                                    <option value="team_member">Team Member - Thành viên nhóm</option>
+                                    <option value="team_manager">Team Manager - Quản lý nhóm</option>
+                                </select>
+                                <div class="form-text">
+                                    <small>
+                                        <strong>Team Member:</strong> Có thể tạo và quản lý công việc cá nhân, tham gia nhóm<br>
+                                        <strong>Team Manager:</strong> Có thể tạo nhóm, mời thành viên và quản lý tất cả công việc
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="password" class="form-label">Mật khẩu *</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">
+                                                <i class="fas fa-lock"></i>
+                                            </span>
+                                            <input type="password" class="form-control" id="password" name="password" 
+                                                   minlength="6" required>
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password')">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                        <div class="form-text">Tối thiểu 6 ký tự</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="confirm_password" class="form-label">Xác nhận mật khẩu *</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">
+                                                <i class="fas fa-lock"></i>
+                                            </span>
+                                            <input type="password" class="form-control" id="confirm_password" 
+                                                   name="confirm_password" minlength="6" required>
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirm_password')">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                        <div id="passwordMatch" class="form-text"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Password Strength Indicator -->
+                            <div class="mb-3">
+                                <div class="password-strength">
+                                    <div class="progress" style="height: 6px;">
+                                        <div id="passwordStrengthBar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                    <small id="passwordStrengthText" class="form-text"></small>
+                                </div>
+                            </div>
+
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="agree_terms" required>
+                                <label class="form-check-label" for="agree_terms">
+                                    Tôi đồng ý với <a href="#" class="text-primary">Điều khoản sử dụng</a> 
+                                    và <a href="#" class="text-primary">Chính sách bảo mật</a> *
+                                </label>
+                            </div>
+
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="newsletter">
+                                <label class="form-check-label" for="newsletter">
+                                    Nhận thông báo về tính năng mới và cập nhật qua email
+                                </label>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-user-plus me-2"></i>Tạo tài khoản
+                                </button>
+                            </div>
+                        </form>
+
+                        <hr class="my-4">
+
+                        <div class="text-center">
+                            <p class="mb-0">
+                                Đã có tài khoản? 
+                                <a href="/login" class="text-primary text-decoration-none">
+                                    <i class="fas fa-sign-in-alt me-1"></i>Đăng nhập ngay
+                                </a>
+                            </p>
+                        </div>
+
+                        <!-- Security Notice -->
+                        <div class="mt-4">
+                            <div class="alert alert-info">
+                                <i class="fas fa-shield-alt me-2"></i>
+                                <strong>Bảo mật:</strong> Sau khi đăng ký, chúng tôi khuyến khích bạn bật 
+                                xác thực 2 yếu tố (2FA) để tăng cường bảo mật tài khoản.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Toggle password visibility
+function togglePassword(fieldId) {
+    const field = document.getElementById(fieldId);
+    const icon = field.nextElementSibling.querySelector('i');
+    
+    if (field.type === 'password') {
+        field.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+        field.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+    }
+}
+
+// Password strength checker
+function checkPasswordStrength(password) {
+    let strength = 0;
+    let feedback = [];
+    
+    if (password.length >= 6) strength += 1;
+    else feedback.push('Tối thiểu 6 ký tự');
+    
+    if (password.length >= 12) strength += 1;
+    else if (password.length >= 8) strength += 0.5;
+    
+    if (/[a-z]/.test(password)) strength += 1;
+    else feedback.push('Chữ thường');
+    
+    if (/[A-Z]/.test(password)) strength += 1;
+    else feedback.push('Chữ hoa');
+    
+    if (/[0-9]/.test(password)) strength += 1;
+    else feedback.push('Số');
+    
+    if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+    else feedback.push('Ký tự đặc biệt');
+    
+    return { strength, feedback };
+}
+
+// Update password strength indicator
+function updatePasswordStrength() {
+    const password = document.getElementById('password').value;
+    const strengthBar = document.getElementById('passwordStrengthBar');
+    const strengthText = document.getElementById('passwordStrengthText');
+    
+    if (!password) {
+        strengthBar.style.width = '0%';
+        strengthBar.className = 'progress-bar';
+        strengthText.textContent = '';
+        return;
+    }
+    
+    const { strength, feedback } = checkPasswordStrength(password);
+    const percentage = (strength / 6) * 100;
+    
+    strengthBar.style.width = percentage + '%';
+    
+    if (percentage < 40) {
+        strengthBar.className = 'progress-bar bg-danger';
+        strengthText.textContent = 'Yếu - Cần: ' + feedback.join(', ');
+        strengthText.className = 'form-text text-danger';
+    } else if (percentage < 70) {
+        strengthBar.className = 'progress-bar bg-warning';
+        strengthText.textContent = 'Trung bình - Nên thêm: ' + feedback.join(', ');
+        strengthText.className = 'form-text text-warning';
+    } else {
+        strengthBar.className = 'progress-bar bg-success';
+        strengthText.textContent = 'Mạnh - Mật khẩu tốt!';
+        strengthText.className = 'form-text text-success';
+    }
+}
+
+// Check password match
+function checkPasswordMatch() {
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    const matchText = document.getElementById('passwordMatch');
+    
+    if (!confirmPassword) {
+        matchText.textContent = '';
+        return;
+    }
+    
+    if (password === confirmPassword) {
+        matchText.textContent = 'Mật khẩu khớp';
+        matchText.className = 'form-text text-success';
+    } else {
+        matchText.textContent = 'Mật khẩu không khớp';
+        matchText.className = 'form-text text-danger';
+    }
+}
+
+// Validate username format
+function validateUsername() {
+    const username = document.getElementById('username').value;
+    const field = document.getElementById('username');
+    
+    if (!username) return;
+    
+    // Remove spaces and special characters except underscore and dash
+    const cleaned = username.replace(/[^\w-]/g, '');
+    if (cleaned !== username) {
+        field.value = cleaned;
+    }
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Password strength
+    document.getElementById('password').addEventListener('input', updatePasswordStrength);
+    
+    // Password match
+    document.getElementById('confirm_password').addEventListener('input', checkPasswordMatch);
+    document.getElementById('password').addEventListener('input', checkPasswordMatch);
+    
+    // Username validation
+    document.getElementById('username').addEventListener('input', validateUsername);
+    
+    // Auto-focus email field
+    document.getElementById('email').focus();
+    
+    // Form validation
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirm_password').value;
+        
+        if (password !== confirmPassword) {
+            e.preventDefault();
+            todoApp.showToast('Mật khẩu xác nhận không khớp', 'error');
+            document.getElementById('confirm_password').focus();
+            return;
+        }
+        
+        const { strength } = checkPasswordStrength(password);
+        if (strength < 2) {
+            e.preventDefault();
+            todoApp.showToast('Mật khẩu quá yếu. Vui lòng tạo mật khẩu mạnh hơn.', 'warning');
+            document.getElementById('password').focus();
+            return;
+        }
+    });
+});
+
+// Phone number formatting
+document.getElementById('phone_number').addEventListener('input', function(e) {
+    // Remove non-numeric characters
+    let value = e.target.value.replace(/\D/g, '');
+    
+    // Format as phone number
+    if (value.length > 0) {
+        if (value.startsWith('84')) {
+            // International format
+            value = '+84 ' + value.substring(2);
+        } else if (value.startsWith('0')) {
+            // Domestic format
+            value = value.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3');
+        }
+    }
+    
+    e.target.value = value;
+});
+
+// Role selection helper
+document.getElementById('role').addEventListener('change', function(e) {
+    const roleInfo = {
+        'team_member': 'Bạn sẽ có thể tạo và quản lý công việc cá nhân, tham gia các nhóm làm việc.',
+        'team_manager': 'Bạn sẽ có thể tạo nhóm, mời thành viên, và quản lý tất cả công việc trong nhóm.'
+    };
+    
+    const selectedRole = e.target.value;
+    if (roleInfo[selectedRole]) {
+        todoApp.showToast(roleInfo[selectedRole], 'info');
+    }
+});
+</script>
+{% endblock %}

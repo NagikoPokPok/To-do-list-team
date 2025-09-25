@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}Trang chủ - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Hero Section -->
+    <div class="row justify-content-center text-center py-5">
+        <div class="col-lg-8">
+            <div class="fade-in">
+                <h1 class="display-4 fw-bold text-primary mb-4">
+                    <i class="fas fa-tasks me-3"></i>{{ app_name }}
+                </h1>
+                <p class="lead text-muted mb-4">
+                    Ứng dụng quản lý công việc hiện đại với bảo mật 2FA và quản lý nhóm thông minh
+                </p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    <a href="/register" class="btn btn-primary btn-lg">
+                        <i class="fas fa-user-plus me-2"></i>Đăng ký ngay
+                    </a>
+                    <a href="/login" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="row py-5">
+        <div class="col-12">
+            <h2 class="text-center text-primary mb-5">Tính năng nổi bật</h2>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 slide-in-left">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-shield-alt fa-3x text-primary"></i>
+                    </div>
+                    <h5 class="card-title text-primary">Bảo mật 2FA</h5>
+                    <p class="card-text text-muted">
+                        Xác thực 2 yếu tố với Google Authenticator và OTP qua email để bảo vệ tài khoản tối đa
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 slide-in-left" style="animation-delay: 0.2s;">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-users fa-3x text-primary"></i>
+                    </div>
+                    <h5 class="card-title text-primary">Quản lý nhóm</h5>
+                    <p class="card-text text-muted">
+                        Tạo và quản lý teams với phân quyền rõ ràng: Team Manager và Team Member
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 slide-in-left" style="animation-delay: 0.4s;">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-tasks fa-3x text-primary"></i>
+                    </div>
+                    <h5 class="card-title text-primary">Quản lý công việc</h5>
+                    <p class="card-text text-muted">
+                        Tạo, phân công và theo dõi tiến độ công việc với nhiều mức độ ưu tiên
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 bounce-in" style="animation-delay: 0.6s;">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-bell fa-3x text-primary"></i>
+                    </div>
+                    <h5 class="card-title text-primary">Thông báo email</h5>
+                    <p class="card-text text-muted">
+                        Nhận thông báo qua email khi được gán công việc mới hoặc có cập nhật quan trọng
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 bounce-in" style="animation-delay: 0.8s;">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-mobile-alt fa-3x text-primary"></i>
+                    </div>
+                    <h5 class="card-title text-primary">Responsive Design</h5>
+                    <p class="card-text text-muted">
+                        Giao diện thân thiện, hoạt động mượt mà trên mọi thiết bị: desktop, tablet, mobile
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 bounce-in" style="animation-delay: 1s;">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-rocket fa-3x text-primary"></i>
+                    </div>
+                    <h5 class="card-title text-primary">Hiệu suất cao</h5>
+                    <p class="card-text text-muted">
+                        Được xây dựng với FastAPI và SQLite, đảm bảo tốc độ xử lý nhanh và ổn định
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Section -->
+    <div class="row py-5 bg-light rounded-3">
+        <div class="col-12">
+            <h2 class="text-center text-primary mb-5">Tại sao chọn {{ app_name }}?</h2>
+        </div>
+        
+        <div class="col-md-3 text-center mb-4">
+            <div class="stats-card card">
+                <div class="card-body">
+                    <h3 class="counter" data-target="99">0</h3>
+                    <p>% Uptime</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 text-center mb-4">
+            <div class="stats-card card">
+                <div class="card-body">
+                    <h3 class="counter" data-target="256">0</h3>
+                    <p>Bit Encryption</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 text-center mb-4">
+            <div class="stats-card card">
+                <div class="card-body">
+                    <h3 class="counter" data-target="24">0</h3>
+                    <p>Giờ hỗ trợ</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 text-center mb-4">
+            <div class="stats-card card">
+                <div class="card-body">
+                    <h3 class="counter" data-target="1000">0</h3>
+                    <p>+ Users</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How it works Section -->
+    <div class="row py-5">
+        <div class="col-12">
+            <h2 class="text-center text-primary mb-5">Cách thức hoạt động</h2>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="d-flex align-items-start">
+                <div class="flex-shrink-0">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <span class="fw-bold">1</span>
+                    </div>
+                </div>
+                <div class="ms-3">
+                    <h5 class="text-primary">Đăng ký tài khoản</h5>
+                    <p class="text-muted">Tạo tài khoản với email và mật khẩu mạnh. Chọn vai trò Team Manager để quản lý nhóm.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="d-flex align-items-start">
+                <div class="flex-shrink-0">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <span class="fw-bold">2</span>
+                    </div>
+                </div>
+                <div class="ms-3">
+                    <h5 class="text-primary">Bật bảo mật 2FA</h5>
+                    <p class="text-muted">Cài đặt Google Authenticator và bật xác thực 2 yếu tố để bảo vệ tài khoản.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="d-flex align-items-start">
+                <div class="flex-shrink-0">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <span class="fw-bold">3</span>
+                    </div>
+                </div>
+                <div class="ms-3">
+                    <h5 class="text-primary">Tạo nhóm và mời thành viên</h5>
+                    <p class="text-muted">Team Manager có thể tạo nhóm làm việc và mời các thành viên tham gia.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="d-flex align-items-start">
+                <div class="flex-shrink-0">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <span class="fw-bold">4</span>
+                    </div>
+                </div>
+                <div class="ms-3">
+                    <h5 class="text-primary">Quản lý công việc</h5>
+                    <p class="text-muted">Tạo, phân công và theo dõi tiến độ các công việc với giao diện trực quan.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="row py-5">
+        <div class="col-12 text-center">
+            <div class="bg-primary text-white rounded-3 p-5">
+                <h2 class="mb-3">Sẵn sàng bắt đầu?</h2>
+                <p class="lead mb-4">Tham gia cùng hàng nghìn người dùng đang sử dụng {{ app_name }} để quản lý công việc hiệu quả.</p>
+                <a href="/register" class="btn btn-light btn-lg">
+                    <i class="fas fa-rocket me-2"></i>Bắt đầu miễn phí
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Animate counters
+document.addEventListener('DOMContentLoaded', function() {
+    const counters = document.querySelectorAll('.counter');
+    
+    const animateCounter = (counter) => {
+        const target = parseInt(counter.getAttribute('data-target'));
+        const duration = 2000; // 2 seconds
+        const start = 0;
+        const increment = target / (duration / 16); // 60fps
+        let current = start;
+        
+        const timer = setInterval(() => {
+            current += increment;
+            counter.textContent = Math.floor(current);
+            
+            if (current >= target) {
+                counter.textContent = target;
+                clearInterval(timer);
+            }
+        }, 16);
+    };
+    
+    // Start animation when counters come into view
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateCounter(entry.target);
+                observer.unobserve(entry.target);
+            }
+        });
+    });
+    
+    counters.forEach(counter => observer.observe(counter));
+});
+</script>
+{% endblock %}

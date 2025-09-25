@@ -1,0 +1,576 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Welcome Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 text-primary mb-1">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    </h1>
+                    <p class="text-muted mb-0" id="welcomeMessage">Chào mừng bạn trở lại!</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary" onclick="openCreateTaskModal()">
+                        <i class="fas fa-plus me-2"></i>Tạo công việc
+                    </button>
+                    <div class="dropdown" id="teamManagerActions" style="display: none;">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-cog me-2"></i>Quản lý
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/teams">
+                                <i class="fas fa-users me-2"></i>Quản lý nhóm
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="openCreateTeamModal()">
+                                <i class="fas fa-plus me-2"></i>Tạo nhóm mới
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="stats-card card">
+                <div class="card-body text-center">
+                    <i class="fas fa-tasks fa-2x mb-2"></i>
+                    <h3 id="totalTasks">0</h3>
+                    <p>Tổng công việc</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <i class="fas fa-clock fa-2x mb-2"></i>
+                    <h3 id="pendingTasks">0</h3>
+                    <p>Đang chờ</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-spinner fa-2x mb-2"></i>
+                    <h3 id="inProgressTasks">0</h3>
+                    <p>Đang thực hiện</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-check-circle fa-2x mb-2"></i>
+                    <h3 id="completedTasks">0</h3>
+                    <p>Hoàn thành</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Bộ lọc nhanh</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <select class="form-select" id="statusFilter">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="pending">Đang chờ</option>
+                                <option value="in_progress">Đang thực hiện</option>
+                                <option value="completed">Hoàn thành</option>
+                                <option value="cancelled">Đã hủy</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="priorityFilter">
+                                <option value="">Tất cả độ ưu tiên</option>
+                                <option value="urgent">Khẩn cấp</option>
+                                <option value="high">Cao</option>
+                                <option value="medium">Trung bình</option>
+                                <option value="low">Thấp</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="teamFilter">
+                                <option value="">Tất cả nhóm</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary" onclick="applyFilters()">
+                                    <i class="fas fa-search me-1"></i>Lọc
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="clearFilters()">
+                                    <i class="fas fa-times me-1"></i>Xóa
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Tasks -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Công việc gần đây</h5>
+                    <a href="/tasks" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-eye me-1"></i>Xem tất cả
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div id="tasksContainer">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Đang tải...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Đang tải danh sách công việc...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Task Modal -->
+<div class="modal fade" id="createTaskModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus me-2"></i>Tạo công việc mới
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createTaskForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="taskTitle" class="form-label">Tiêu đề *</label>
+                                <input type="text" class="form-control" id="taskTitle" name="title" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="taskPriority" class="form-label">Độ ưu tiên</label>
+                                <select class="form-select" id="taskPriority" name="priority">
+                                    <option value="low">Thấp</option>
+                                    <option value="medium" selected>Trung bình</option>
+                                    <option value="high">Cao</option>
+                                    <option value="urgent">Khẩn cấp</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="taskDescription" class="form-label">Mô tả</label>
+                        <textarea class="form-control" id="taskDescription" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="taskDueDate" class="form-label">Hạn hoàn thành</label>
+                                <input type="datetime-local" class="form-control" id="taskDueDate" name="due_date">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="taskTeam" class="form-label">Nhóm</label>
+                                <select class="form-select" id="taskTeam" name="team_id">
+                                    <option value="">Không thuộc nhóm nào</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="taskAssignee" class="form-label">Gán cho</label>
+                        <select class="form-select" id="taskAssignee" name="assignee_id">
+                            <option value="">Chưa gán cho ai</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Tạo công việc
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Create Team Modal -->
+<div class="modal fade" id="createTeamModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-users me-2"></i>Tạo nhóm mới
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createTeamForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="teamName" class="form-label">Tên nhóm *</label>
+                        <input type="text" class="form-control" id="teamName" name="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="teamDescription" class="form-label">Mô tả</label>
+                        <textarea class="form-control" id="teamDescription" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="teamMaxMembers" class="form-label">Số thành viên tối đa</label>
+                        <input type="number" class="form-control" id="teamMaxMembers" name="max_members" 
+                               value="50" min="1" max="200">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Tạo nhóm
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentTasks = [];
+let currentTeams = [];
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', async function() {
+    if (!todoApp.user) {
+        await todoApp.getCurrentUser();
+    }
+    
+    updateWelcomeMessage();
+    showTeamManagerActions();
+    await loadDashboardData();
+    setupEventListeners();
+});
+
+function updateWelcomeMessage() {
+    const welcomeMsg = document.getElementById('welcomeMessage');
+    if (todoApp.user) {
+        const name = todoApp.user.full_name || todoApp.user.username;
+        const hour = new Date().getHours();
+        let greeting = 'Chào';
+        
+        if (hour < 12) greeting = 'Chào buổi sáng';
+        else if (hour < 18) greeting = 'Chào buổi chiều';
+        else greeting = 'Chào buổi tối';
+        
+        welcomeMsg.textContent = `${greeting}, ${name}!`;
+    }
+}
+
+function showTeamManagerActions() {
+    const teamManagerActions = document.getElementById('teamManagerActions');
+    if (todoApp.user && todoApp.user.role === 'team_manager') {
+        teamManagerActions.style.display = 'block';
+    }
+}
+
+async function loadDashboardData() {
+    try {
+        // Load tasks and teams in parallel
+        const [tasks, teams] = await Promise.all([
+            todoApp.getTasks({ limit: 20 }),
+            todoApp.getTeams()
+        ]);
+        
+        currentTasks = tasks;
+        currentTeams = teams;
+        
+        updateStatistics(tasks);
+        renderRecentTasks(tasks);
+        populateTeamFilters(teams);
+        populateTeamSelectOptions(teams);
+        
+    } catch (error) {
+        console.error('Load dashboard data error:', error);
+        document.getElementById('tasksContainer').innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                <p class="text-muted">Không thể tải dữ liệu. Vui lòng thử lại sau.</p>
+                <button class="btn btn-primary" onclick="loadDashboardData()">
+                    <i class="fas fa-refresh me-2"></i>Thử lại
+                </button>
+            </div>
+        `;
+    }
+}
+
+function updateStatistics(tasks) {
+    const stats = {
+        total: tasks.length,
+        pending: tasks.filter(t => t.status === 'pending').length,
+        in_progress: tasks.filter(t => t.status === 'in_progress').length,
+        completed: tasks.filter(t => t.status === 'completed').length
+    };
+    
+    // Animate counters
+    animateCounter('totalTasks', stats.total);
+    animateCounter('pendingTasks', stats.pending);
+    animateCounter('inProgressTasks', stats.in_progress);
+    animateCounter('completedTasks', stats.completed);
+}
+
+function animateCounter(elementId, target) {
+    const element = document.getElementById(elementId);
+    const duration = 1000;
+    const start = 0;
+    const increment = target / (duration / 16);
+    let current = start;
+    
+    const timer = setInterval(() => {
+        current += increment;
+        element.textContent = Math.floor(current);
+        
+        if (current >= target) {
+            element.textContent = target;
+            clearInterval(timer);
+        }
+    }, 16);
+}
+
+function renderRecentTasks(tasks) {
+    const container = document.getElementById('tasksContainer');
+    
+    if (tasks.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                <p class="text-muted">Chưa có công việc nào. Hãy tạo công việc đầu tiên!</p>
+                <button class="btn btn-primary" onclick="openCreateTaskModal()">
+                    <i class="fas fa-plus me-2"></i>Tạo công việc
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    const tasksHtml = tasks.slice(0, 10).map(task => `
+        <div class="task-card card mb-3 priority-${task.priority}">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title mb-1">${task.title}</h6>
+                        <p class="card-text text-muted small mb-2">${task.description || 'Không có mô tả'}</p>
+                        <div class="d-flex gap-2 mb-2">
+                            <span class="badge ${getStatusBadgeClass(task.status)}">
+                                ${getStatusText(task.status)}
+                            </span>
+                            <span class="badge ${getPriorityBadgeClass(task.priority)}">
+                                ${getPriorityText(task.priority)}
+                            </span>
+                        </div>
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i>
+                            Tạo: ${formatDate(task.created_at)}
+                            ${task.due_date ? ` | Hạn: ${formatDate(task.due_date)}` : ''}
+                        </small>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="editTask(${task.id})">
+                                <i class="fas fa-edit me-2"></i>Chỉnh sửa
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="changeTaskStatus(${task.id}, 'completed')">
+                                <i class="fas fa-check me-2"></i>Hoàn thành
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" onclick="deleteTask(${task.id})">
+                                <i class="fas fa-trash me-2"></i>Xóa
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = tasksHtml;
+}
+
+function populateTeamFilters(teams) {
+    const teamFilter = document.getElementById('teamFilter');
+    teams.forEach(team => {
+        const option = document.createElement('option');
+        option.value = team.id;
+        option.textContent = team.name;
+        teamFilter.appendChild(option);
+    });
+}
+
+function populateTeamSelectOptions(teams) {
+    const taskTeamSelect = document.getElementById('taskTeam');
+    teams.forEach(team => {
+        const option = document.createElement('option');
+        option.value = team.id;
+        option.textContent = team.name;
+        taskTeamSelect.appendChild(option);
+    });
+}
+
+// Modal functions
+function openCreateTaskModal() {
+    const modal = new bootstrap.Modal(document.getElementById('createTaskModal'));
+    modal.show();
+}
+
+function openCreateTeamModal() {
+    const modal = new bootstrap.Modal(document.getElementById('createTeamModal'));
+    modal.show();
+}
+
+// Event listeners
+function setupEventListeners() {
+    // Create task form
+    document.getElementById('createTaskForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const taskData = {
+            title: formData.get('title'),
+            description: formData.get('description'),
+            priority: formData.get('priority'),
+            due_date: formData.get('due_date') || null,
+            team_id: formData.get('team_id') ? parseInt(formData.get('team_id')) : null,
+            assignee_id: formData.get('assignee_id') ? parseInt(formData.get('assignee_id')) : null
+        };
+        
+        try {
+            await todoApp.createTask(taskData);
+            bootstrap.Modal.getInstance(document.getElementById('createTaskModal')).hide();
+            this.reset();
+            await loadDashboardData();
+        } catch (error) {
+            // Error already handled in todoApp.createTask
+        }
+    });
+    
+    // Create team form
+    document.getElementById('createTeamForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const teamData = {
+            name: formData.get('name'),
+            description: formData.get('description'),
+            max_members: parseInt(formData.get('max_members'))
+        };
+        
+        try {
+            await todoApp.createTeam(teamData);
+            bootstrap.Modal.getInstance(document.getElementById('createTeamModal')).hide();
+            this.reset();
+            await loadDashboardData();
+        } catch (error) {
+            // Error already handled in todoApp.createTeam
+        }
+    });
+}
+
+// Filter functions
+function applyFilters() {
+    const status = document.getElementById('statusFilter').value;
+    const priority = document.getElementById('priorityFilter').value;
+    const teamId = document.getElementById('teamFilter').value;
+    
+    const filters = {};
+    if (status) filters.status = status;
+    if (priority) filters.priority = priority;
+    if (teamId) filters.team_id = teamId;
+    
+    todoApp.getTasks(filters).then(tasks => {
+        currentTasks = tasks;
+        updateStatistics(tasks);
+        renderRecentTasks(tasks);
+    });
+}
+
+function clearFilters() {
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('priorityFilter').value = '';
+    document.getElementById('teamFilter').value = '';
+    loadDashboardData();
+}
+
+// Task actions
+async function changeTaskStatus(taskId, status) {
+    try {
+        await todoApp.updateTask(taskId, { status });
+        await loadDashboardData();
+    } catch (error) {
+        // Error already handled in todoApp.updateTask
+    }
+}
+
+async function deleteTask(taskId) {
+    if (!confirm('Bạn có chắc chắn muốn xóa công việc này?')) {
+        return;
+    }
+    
+    try {
+        await todoApp.deleteTask(taskId);
+        await loadDashboardData();
+    } catch (error) {
+        // Error already handled in todoApp.deleteTask
+    }
+}
+
+// Utility functions
+function getStatusText(status) {
+    const statusTexts = {
+        'pending': 'Đang chờ',
+        'in_progress': 'Đang thực hiện',
+        'completed': 'Hoàn thành',
+        'cancelled': 'Đã hủy'
+    };
+    return statusTexts[status] || status;
+}
+
+function getPriorityText(priority) {
+    const priorityTexts = {
+        'low': 'Thấp',
+        'medium': 'Trung bình',
+        'high': 'Cao',
+        'urgent': 'Khẩn cấp'
+    };
+    return priorityTexts[priority] || priority;
+}
+</script>
+{% endblock %}

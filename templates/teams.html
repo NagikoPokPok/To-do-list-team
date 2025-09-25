@@ -1,0 +1,788 @@
+{% extends "base.html" %}
+
+{% block title %}Quản lý nhóm - {{ app_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.team-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid #dc3545;
+}
+
+.team-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.member-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #dc3545, #ff6b7a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    margin-right: 0.75rem;
+}
+
+.team-stats {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 0.5rem;
+}
+
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #dc3545;
+}
+
+.role-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.member-actions {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.list-group-item:hover .member-actions {
+    opacity: 1;
+}
+
+.invitation-status {
+    font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+    .team-card {
+        margin-bottom: 1rem;
+    }
+    
+    .stat-item {
+        padding: 0.25rem;
+    }
+    
+    .stat-number {
+        font-size: 1.25rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 text-primary mb-0">
+                    <i class="fas fa-users me-2"></i>Quản lý nhóm
+                </h1>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary" onclick="loadTeams()">
+                        <i class="fas fa-refresh me-2"></i>Làm mới
+                    </button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#teamModal" onclick="openTeamModal()">
+                        <i class="fas fa-plus me-2"></i>Tạo nhóm mới
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Teams Overview -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="team-stats">
+                <div class="row" id="teamStatsContainer">
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <div class="stat-number" id="totalTeamsCount">0</div>
+                            <div class="text-muted">Tổng số nhóm</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <div class="stat-number" id="managingTeamsCount">0</div>
+                            <div class="text-muted">Nhóm quản lý</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <div class="stat-number" id="memberTeamsCount">0</div>
+                            <div class="text-muted">Nhóm tham gia</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <div class="stat-number" id="totalMembersCount">0</div>
+                            <div class="text-muted">Tổng thành viên</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Teams Grid -->
+    <div class="row" id="teamsContainer">
+        <div class="col-12">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2">Đang tải danh sách nhóm...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Team Modal -->
+<div class="modal fade" id="teamModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="teamModalTitle">
+                    <i class="fas fa-plus me-2"></i>Tạo nhóm mới
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="teamForm">
+                <div class="modal-body">
+                    <input type="hidden" id="teamId" name="team_id">
+                    
+                    <div class="mb-3">
+                        <label for="team_name" class="form-label">Tên nhóm <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="team_name" name="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="team_description" class="form-label">Mô tả nhóm</label>
+                        <textarea class="form-control" id="team_description" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_private" name="is_private">
+                                <label class="form-check-label" for="is_private">
+                                    Nhóm riêng tư
+                                </label>
+                                <div class="form-text">Chỉ thành viên được mời mới có thể tham gia</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="max_members" class="form-label">Số thành viên tối đa</label>
+                                <input type="number" class="form-control" id="max_members" name="max_members" min="2" max="100" value="10">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary" id="saveTeamBtn">
+                        <i class="fas fa-save me-2"></i>Lưu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Team Detail Modal -->
+<div class="modal fade" id="teamDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="teamDetailTitle">
+                    <i class="fas fa-users me-2"></i>Chi tiết nhóm
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- Team Info -->
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Thông tin nhóm</h6>
+                            </div>
+                            <div class="card-body" id="teamInfoContent">
+                                <!-- Team info will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Members List -->
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="fas fa-users me-2"></i>Thành viên nhóm</h6>
+                                <button class="btn btn-sm btn-primary" id="inviteMemberBtn" onclick="openInviteModal()">
+                                    <i class="fas fa-user-plus me-2"></i>Mời thành viên
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="list-group list-group-flush" id="teamMembersContent">
+                                    <!-- Members will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Pending Invitations -->
+                        <div class="card mt-3" id="pendingInvitationsCard" style="display: none;">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Lời mời đang chờ</h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="list-group list-group-flush" id="pendingInvitationsContent">
+                                    <!-- Pending invitations will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-outline-primary" id="editTeamBtn" onclick="editCurrentTeam()">
+                    <i class="fas fa-edit me-2"></i>Chỉnh sửa nhóm
+                </button>
+                <button type="button" class="btn btn-outline-danger" id="deleteTeamBtn" onclick="deleteCurrentTeam()">
+                    <i class="fas fa-trash me-2"></i>Xóa nhóm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Invite Member Modal -->
+<div class="modal fade" id="inviteMemberModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus me-2"></i>Mời thành viên
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="inviteMemberForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="inviteEmail" class="form-label">Email người được mời <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control" id="inviteEmail" name="email" required>
+                        <div class="form-text">Nhập email của người bạn muốn mời vào nhóm</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="inviteRole" class="form-label">Vai trò</label>
+                        <select class="form-select" id="inviteRole" name="role">
+                            <option value="team_member">Thành viên</option>
+                            <option value="team_manager">Quản lý</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="inviteMessage" class="form-label">Tin nhắn (tùy chọn)</label>
+                        <textarea class="form-control" id="inviteMessage" name="message" rows="3" placeholder="Viết lời mời tham gia nhóm..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-2"></i>Gửi lời mời
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Leave Team Modal -->
+<div class="modal fade" id="leaveTeamModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-sign-out-alt me-2"></i>Rời khỏi nhóm
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Cảnh báo:</strong> Bạn có chắc chắn muốn rời khỏi nhóm này? 
+                    Bạn sẽ không thể truy cập các công việc và thông tin của nhóm nữa.
+                </div>
+                <p>Nhóm: <strong id="leaveTeamName"></strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger" id="confirmLeaveTeam">
+                    <i class="fas fa-sign-out-alt me-2"></i>Rời nhóm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let allTeams = [];
+let currentTeam = null;
+let currentTeamMembers = [];
+let pendingInvitations = [];
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', async function() {
+    if (!todoApp.user) {
+        await todoApp.getCurrentUser();
+    }
+    
+    if (!todoApp.user) {
+        window.location.href = '/login';
+        return;
+    }
+    
+    await loadTeams();
+    setupEventListeners();
+});
+
+async function loadTeams() {
+    try {
+        allTeams = await todoApp.getTeams();
+        displayTeams();
+        updateTeamStats();
+    } catch (error) {
+        document.getElementById('teamsContainer').innerHTML = `
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <h5>Không thể tải danh sách nhóm</h5>
+                    <p class="text-muted">${error.message}</p>
+                    <button class="btn btn-primary" onclick="loadTeams()">Thử lại</button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function displayTeams() {
+    const container = document.getElementById('teamsContainer');
+    
+    if (allTeams.length === 0) {
+        container.innerHTML = `
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h5>Chưa có nhóm nào</h5>
+                    <p class="text-muted">Tạo nhóm mới để bắt đầu cộng tác</p>
+                    <button class="btn btn-primary" onclick="openTeamModal()">
+                        <i class="fas fa-plus me-2"></i>Tạo nhóm mới
+                    </button>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = allTeams.map(team => createTeamCard(team)).join('');
+}
+
+function createTeamCard(team) {
+    const isManager = team.created_by == todoApp.user.id;
+    const memberCount = team.member_count || 0;
+    const maxMembers = team.max_members || 10;
+    
+    return `
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card team-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title mb-0">${team.name}</h5>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="viewTeamDetail(${team.id})">
+                                    <i class="fas fa-eye me-2"></i>Xem chi tiết
+                                </a></li>
+                                ${isManager ? `
+                                    <li><a class="dropdown-item" href="#" onclick="editTeam(${team.id})">
+                                        <i class="fas fa-edit me-2"></i>Chỉnh sửa
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteTeam(${team.id})">
+                                        <i class="fas fa-trash me-2"></i>Xóa nhóm
+                                    </a></li>
+                                ` : `
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-warning" href="#" onclick="leaveTeam(${team.id})">
+                                        <i class="fas fa-sign-out-alt me-2"></i>Rời nhóm
+                                    </a></li>
+                                `}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    ${team.description ? `<p class="card-text text-muted">${team.description}</p>` : ''}
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-${isManager ? 'primary' : 'success'} me-2">
+                                ${isManager ? 'Quản lý' : 'Thành viên'}
+                            </span>
+                            ${team.is_private ? '<span class="badge bg-warning">Riêng tư</span>' : '<span class="badge bg-info">Công khai</span>'}
+                        </div>
+                        <small class="text-muted">
+                            <i class="fas fa-users me-1"></i>${memberCount}/${maxMembers}
+                        </small>
+                    </div>
+                    
+                    <div class="progress mb-2" style="height: 5px;">
+                        <div class="progress-bar bg-primary" style="width: ${(memberCount / maxMembers) * 100}%"></div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            Tạo ${formatDate(team.created_at)}
+                        </small>
+                        <button class="btn btn-sm btn-primary" onclick="viewTeamDetail(${team.id})">
+                            Xem chi tiết
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function updateTeamStats() {
+    const managingTeams = allTeams.filter(team => team.created_by == todoApp.user.id);
+    const memberTeams = allTeams.filter(team => team.created_by != todoApp.user.id);
+    const totalMembers = allTeams.reduce((sum, team) => sum + (team.member_count || 0), 0);
+    
+    document.getElementById('totalTeamsCount').textContent = allTeams.length;
+    document.getElementById('managingTeamsCount').textContent = managingTeams.length;
+    document.getElementById('memberTeamsCount').textContent = memberTeams.length;
+    document.getElementById('totalMembersCount').textContent = totalMembers;
+}
+
+// Team Operations
+function openTeamModal(teamId = null) {
+    currentTeam = teamId ? allTeams.find(t => t.id == teamId) : null;
+    
+    const modal = document.getElementById('teamModal');
+    const title = document.getElementById('teamModalTitle');
+    const form = document.getElementById('teamForm');
+    
+    if (currentTeam) {
+        title.innerHTML = '<i class="fas fa-edit me-2"></i>Chỉnh sửa nhóm';
+        populateTeamForm(currentTeam);
+    } else {
+        title.innerHTML = '<i class="fas fa-plus me-2"></i>Tạo nhóm mới';
+        form.reset();
+        document.getElementById('teamId').value = '';
+        document.getElementById('max_members').value = '10';
+    }
+    
+    new bootstrap.Modal(modal).show();
+}
+
+function populateTeamForm(team) {
+    document.getElementById('teamId').value = team.id;
+    document.getElementById('team_name').value = team.name;
+    document.getElementById('team_description').value = team.description || '';
+    document.getElementById('is_private').checked = team.is_private;
+    document.getElementById('max_members').value = team.max_members || 10;
+}
+
+async function saveTeam() {
+    const form = document.getElementById('teamForm');
+    const formData = new FormData(form);
+    
+    const teamData = {
+        name: formData.get('name'),
+        description: formData.get('description'),
+        is_private: formData.get('is_private') === 'on',
+        max_members: parseInt(formData.get('max_members'))
+    };
+    
+    try {
+        const teamId = formData.get('team_id');
+        
+        if (teamId) {
+            await todoApp.updateTeam(teamId, teamData);
+            todoApp.showToast('Cập nhật nhóm thành công!', 'success');
+        } else {
+            await todoApp.createTeam(teamData);
+            todoApp.showToast('Tạo nhóm thành công!', 'success');
+        }
+        
+        bootstrap.Modal.getInstance(document.getElementById('teamModal')).hide();
+        await loadTeams();
+        
+    } catch (error) {
+        todoApp.showToast(error.message, 'error');
+    }
+}
+
+function editTeam(teamId) {
+    openTeamModal(teamId);
+}
+
+async function deleteTeam(teamId) {
+    const team = allTeams.find(t => t.id == teamId);
+    if (!team) return;
+    
+    if (!confirm(`Bạn có chắc chắn muốn xóa nhóm "${team.name}"? Hành động này không thể hoàn tác.`)) return;
+    
+    try {
+        await todoApp.deleteTeam(teamId);
+        todoApp.showToast('Xóa nhóm thành công!', 'success');
+        await loadTeams();
+    } catch (error) {
+        todoApp.showToast(error.message, 'error');
+    }
+}
+
+async function viewTeamDetail(teamId) {
+    currentTeam = allTeams.find(t => t.id == teamId);
+    if (!currentTeam) return;
+    
+    try {
+        // Load team members
+        currentTeamMembers = await todoApp.getTeamMembers(teamId);
+        
+        // Load pending invitations if user is manager
+        if (currentTeam.created_by == todoApp.user.id) {
+            try {
+                pendingInvitations = await todoApp.getPendingInvitations(teamId);
+            } catch (error) {
+                pendingInvitations = [];
+            }
+        }
+        
+        displayTeamDetail();
+        new bootstrap.Modal(document.getElementById('teamDetailModal')).show();
+        
+    } catch (error) {
+        todoApp.showToast('Không thể tải thông tin nhóm', 'error');
+    }
+}
+
+function displayTeamDetail() {
+    const isManager = currentTeam.created_by == todoApp.user.id;
+    
+    // Set modal title
+    document.getElementById('teamDetailTitle').innerHTML = `
+        <i class="fas fa-users me-2"></i>${currentTeam.name}
+    `;
+    
+    // Team info
+    document.getElementById('teamInfoContent').innerHTML = `
+        <p><strong>Mô tả:</strong><br>${currentTeam.description || 'Không có mô tả'}</p>
+        <p><strong>Loại:</strong> ${currentTeam.is_private ? 'Riêng tư' : 'Công khai'}</p>
+        <p><strong>Thành viên:</strong> ${currentTeamMembers.length}/${currentTeam.max_members || 10}</p>
+        <p><strong>Được tạo:</strong> ${formatDate(currentTeam.created_at)}</p>
+        <p><strong>Cập nhật:</strong> ${formatDate(currentTeam.updated_at)}</p>
+    `;
+    
+    // Members list
+    const membersHtml = currentTeamMembers.map(member => {
+        const isCurrentUser = member.id == todoApp.user.id;
+        const isTeamManager = member.id == currentTeam.created_by;
+        
+        return `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <div class="member-avatar">
+                        ${getInitials(member.full_name || member.username)}
+                    </div>
+                    <div>
+                        <h6 class="mb-1">${member.full_name || member.username}</h6>
+                        <small class="text-muted">${member.email}</small>
+                        ${isCurrentUser ? '<span class="badge bg-info ms-2">Bạn</span>' : ''}
+                    </div>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="badge role-badge bg-${isTeamManager ? 'primary' : 'success'} me-2">
+                        ${isTeamManager ? 'Quản lý' : 'Thành viên'}
+                    </span>
+                    ${isManager && !isCurrentUser ? `
+                        <div class="member-actions">
+                            <button class="btn btn-sm btn-outline-danger" onclick="removeMember(${member.id})" title="Xóa khỏi nhóm">
+                                <i class="fas fa-user-minus"></i>
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    document.getElementById('teamMembersContent').innerHTML = membersHtml;
+    
+    // Show/hide invite button
+    const inviteBtn = document.getElementById('inviteMemberBtn');
+    inviteBtn.style.display = isManager ? 'block' : 'none';
+    
+    // Show/hide management buttons
+    document.getElementById('editTeamBtn').style.display = isManager ? 'block' : 'none';
+    document.getElementById('deleteTeamBtn').style.display = isManager ? 'block' : 'none';
+    
+    // Pending invitations
+    if (isManager && pendingInvitations.length > 0) {
+        document.getElementById('pendingInvitationsCard').style.display = 'block';
+        const invitationsHtml = pendingInvitations.map(invitation => `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">${invitation.email}</h6>
+                    <small class="text-muted">Mời lúc: ${formatDate(invitation.created_at)}</small>
+                </div>
+                <div>
+                    <span class="badge bg-warning me-2">Chờ phản hồi</span>
+                    <button class="btn btn-sm btn-outline-danger" onclick="cancelInvitation(${invitation.id})" title="Hủy lời mời">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+        
+        document.getElementById('pendingInvitationsContent').innerHTML = invitationsHtml;
+    } else {
+        document.getElementById('pendingInvitationsCard').style.display = 'none';
+    }
+}
+
+function editCurrentTeam() {
+    if (currentTeam) {
+        bootstrap.Modal.getInstance(document.getElementById('teamDetailModal')).hide();
+        setTimeout(() => openTeamModal(currentTeam.id), 300);
+    }
+}
+
+function deleteCurrentTeam() {
+    if (currentTeam) {
+        bootstrap.Modal.getInstance(document.getElementById('teamDetailModal')).hide();
+        setTimeout(() => deleteTeam(currentTeam.id), 300);
+    }
+}
+
+// Member Management
+function openInviteModal() {
+    const modal = new bootstrap.Modal(document.getElementById('inviteMemberModal'));
+    document.getElementById('inviteMemberForm').reset();
+    modal.show();
+}
+
+async function inviteMember() {
+    const form = document.getElementById('inviteMemberForm');
+    const formData = new FormData(form);
+    
+    const inviteData = {
+        email: formData.get('email'),
+        role: formData.get('role'),
+        message: formData.get('message')
+    };
+    
+    try {
+        await todoApp.inviteToTeam(currentTeam.id, inviteData);
+        bootstrap.Modal.getInstance(document.getElementById('inviteMemberModal')).hide();
+        todoApp.showToast('Gửi lời mời thành công!', 'success');
+        
+        // Refresh team detail
+        await viewTeamDetail(currentTeam.id);
+        
+    } catch (error) {
+        todoApp.showToast(error.message, 'error');
+    }
+}
+
+async function removeMember(memberId) {
+    const member = currentTeamMembers.find(m => m.id == memberId);
+    if (!member) return;
+    
+    if (!confirm(`Bạn có chắc chắn muốn xóa ${member.full_name || member.username} khỏi nhóm?`)) return;
+    
+    try {
+        await todoApp.removeFromTeam(currentTeam.id, memberId);
+        todoApp.showToast('Xóa thành viên thành công!', 'success');
+        
+        // Refresh team detail
+        await viewTeamDetail(currentTeam.id);
+        
+    } catch (error) {
+        todoApp.showToast(error.message, 'error');
+    }
+}
+
+async function cancelInvitation(invitationId) {
+    if (!confirm('Bạn có chắc chắn muốn hủy lời mời này?')) return;
+    
+    try {
+        await todoApp.cancelInvitation(invitationId);
+        todoApp.showToast('Hủy lời mời thành công!', 'success');
+        
+        // Refresh team detail
+        await viewTeamDetail(currentTeam.id);
+        
+    } catch (error) {
+        todoApp.showToast(error.message, 'error');
+    }
+}
+
+function leaveTeam(teamId) {
+    const team = allTeams.find(t => t.id == teamId);
+    if (!team) return;
+    
+    document.getElementById('leaveTeamName').textContent = team.name;
+    
+    const modal = new bootstrap.Modal(document.getElementById('leaveTeamModal'));
+    modal.show();
+    
+    document.getElementById('confirmLeaveTeam').onclick = async function() {
+        try {
+            await todoApp.leaveTeam(teamId);
+            modal.hide();
+            todoApp.showToast('Rời nhóm thành công!', 'success');
+            await loadTeams();
+        } catch (error) {
+            todoApp.showToast(error.message, 'error');
+        }
+    };
+}
+
+// Event Listeners
+function setupEventListeners() {
+    // Team form
+    document.getElementById('teamForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveTeam();
+    });
+    
+    // Invite member form
+    document.getElementById('inviteMemberForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        inviteMember();
+    });
+}
+
+// Utility Functions
+function getInitials(name) {
+    if (!name) return '?';
+    return name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2);
+}
+</script>
+{% endblock %}
