@@ -6,6 +6,8 @@ class TodoApp {
         try {
             const response = await this.apiCall(`/teams/${teamId}/members/${memberId}`, 'DELETE');
             this.showToast('Xóa thành viên thành công!', 'success');
+            document.body.classList.remove('modal-open');
+            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
             return response;
         } catch (error) {
             console.error('Remove from team error:', error);
@@ -648,7 +650,8 @@ async function acceptInvitationFromBell(token) {
         closeNotificationPopup();
         await updateNotificationBell();
         todoApp.showToast('Bạn đã tham gia nhóm thành công!', 'success');
-        // Có thể reload lại trang nhóm hoặc dashboard nếu cần
+        // Reload lại trang để hiển thị team mới
+        setTimeout(() => window.location.reload(), 800);
     } catch (e) {
         todoApp.showToast('Không thể tham gia nhóm: ' + (e.message || ''), 'error');
     }

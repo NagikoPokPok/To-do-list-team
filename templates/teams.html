@@ -703,6 +703,11 @@ async function removeMember(memberId) {
     try {
         await todoApp.removeFromTeam(currentTeam.id, memberId);
         await viewTeamDetail(currentTeam.id);
+
+        bootstrap.Modal.getInstance(document.getElementById('teamDetailModal')).hide();
+        // document.body.classList.remove('modal-open');
+        // document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        
     } catch (error) {
         todoApp.showToast(error.message, 'error');
     }
