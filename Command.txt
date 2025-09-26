@@ -1,0 +1,7 @@
+Tập trung mảng code của bạn về FE là HTML CSS Javascript và Bootstrap
+BE là về Python và FastAPI
+Mỗi khi muốn chạy file test thì nhớ luôn chạy venv ảo vì đó là nơi lưu thư viện
+Hạn chế tạo các file test thừa hay khi tạo file mới thay thế file cũ thì hãy xóa file cũ nhưng chắc chắn rằng file code mới phải hoạt động tối ưu và chạy tốt hơn code cũ
+Tổng hợp hướng dẫn trong 2 file thông là 1 file tạo thư viện và 1 file readme
+Những gì thay đổi ở lần chạy này thì nhớ ghi ra 1 file readme khác tổng hợp những gì bạn đã làm ở lần bạn code.
+Không comment code quá phức tạp - Chức năng hay phần code nào làm gì thì ghi rõ tên phần đó ra là được

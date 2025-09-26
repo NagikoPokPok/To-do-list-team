@@ -20,7 +20,7 @@ from ..schemas import (
 from ..middleware.auth import get_current_user
 from ..services.email_service import email_service
 
-router = APIRouter(prefix="/tasks", tags=["Tasks"])
+router = APIRouter(prefix="/api/v1/tasks", tags=["Tasks"])
 
 
 @router.get("/", response_model=List[TaskResponse])

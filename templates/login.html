@@ -9,9 +9,9 @@
             <div class="col-md-6 col-lg-5">
                 <div class="auth-card card shadow-lg">
                     <div class="card-body p-5">
-                        <div class="auth-header">
-                            <h2><i class="fas fa-sign-in-alt me-2"></i>Đăng nhập</h2>
-                            <p>Chào mừng bạn trở lại {{ app_name }}</p>
+                        <div class="auth-header text-center mb-4">
+                            <h2><i class="fas fa-sign-in-alt me-2 text-primary"></i>Đăng nhập</h2>
+                            <p class="text-muted">Chào mừng bạn trở lại {{ app_name }}</p>
                         </div>
 
                         <form id="loginForm">
@@ -38,49 +38,6 @@
                                 </div>
                             </div>
 
-                            <!-- 2FA Fields -->
-                            <div id="twoFactorSection" style="display: none;">
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    Tài khoản của bạn đã bật 2FA. Vui lòng nhập mã xác thực.
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="totp_code" class="form-label">Mã từ Authenticator App</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">
-                                            <i class="fas fa-mobile-alt"></i>
-                                        </span>
-                                        <input type="text" class="form-control" id="totp_code" name="totp_code" 
-                                               placeholder="6 chữ số" maxlength="6" pattern="[0-9]{6}">
-                                    </div>
-                                    <div class="form-text">
-                                        Nhập mã 6 số từ Google Authenticator hoặc ứng dụng tương tự
-                                    </div>
-                                </div>
-
-                                <div class="text-center mb-3">
-                                    <span class="text-muted">hoặc</span>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="email_otp" class="form-label">Mã OTP từ Email</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">
-                                            <i class="fas fa-envelope"></i>
-                                        </span>
-                                        <input type="text" class="form-control" id="email_otp" name="email_otp" 
-                                               placeholder="6 chữ số" maxlength="6" pattern="[0-9]{6}">
-                                        <button class="btn btn-outline-secondary" type="button" onclick="sendEmailOTP()">
-                                            <i class="fas fa-paper-plane"></i> Gửi OTP
-                                        </button>
-                                    </div>
-                                    <div class="form-text">
-                                        Nhấn "Gửi OTP" để nhận mã qua email
-                                    </div>
-                                </div>
-                            </div>
-
                             <div class="mb-3 form-check">
                                 <input type="checkbox" class="form-check-input" id="remember_me">
                                 <label class="form-check-label" for="remember_me">
@@ -97,86 +54,18 @@
 
                         <hr class="my-4">
                         
-                        <!-- OTP Login Section -->
-                        <div class="text-center mb-3">
-                            <button type="button" class="btn btn-outline-info" onclick="showOTPLogin()">
-                                <i class="fas fa-key me-2"></i>Đăng nhập bằng OTP Email
-                            </button>
-                        </div>
-                        
-                        <!-- OTP Login Form -->
-                        <form id="otpLoginForm" style="display: none;">
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle me-2"></i>
-                                Đăng nhập bằng mã OTP được gửi qua email (không cần mật khẩu)
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="otp_email" class="form-label">Email</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="fas fa-envelope"></i>
-                                    </span>
-                                    <input type="email" class="form-control" id="otp_email" name="otp_email" required>
-                                    <button class="btn btn-outline-primary" type="button" onclick="requestOTP()">
-                                        <i class="fas fa-paper-plane"></i> Gửi OTP
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3" id="otpCodeSection" style="display: none;">
-                                <label for="otp_code" class="form-label">Mã OTP</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="fas fa-key"></i>
-                                    </span>
-                                    <input type="text" class="form-control" id="otp_code" name="otp_code" 
-                                           placeholder="6 chữ số" maxlength="6" pattern="[0-9]{6}">
-                                </div>
-                                <div class="form-text text-danger" id="otpCountdown"></div>
-                            </div>
-                            
-                            <div class="d-grid mb-3">
-                                <button type="submit" class="btn btn-info btn-lg" id="otpLoginButton" disabled>
-                                    <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập với OTP
-                                </button>
-                            </div>
-                            
-                            <div class="text-center">
-                                <button type="button" class="btn btn-link" onclick="showRegularLogin()">
-                                    <i class="fas fa-arrow-left me-2"></i>Quay lại đăng nhập thường
-                                </button>
-                            </div>
-                        </form>
-
-                        <hr class="my-4">
-
                         <div class="text-center">
-                            <p class="mb-0">
-                                Chưa có tài khoản? 
-                                <a href="/register" class="text-primary text-decoration-none">
-                                    <i class="fas fa-user-plus me-1"></i>Đăng ký ngay
-                                </a>
-                            </p>
+                            <p class="text-muted mb-3">Quên mật khẩu?</p>
+                            <a href="#" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal">
+                                <i class="fas fa-key me-2"></i>Khôi phục mật khẩu
+                            </a>
                         </div>
 
-                        <!-- Demo Accounts -->
-                        <div class="mt-4">
-                            <div class="card bg-light">
-                                <div class="card-header">
-                                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Tài khoản demo</h6>
-                                </div>
-                                <div class="card-body">
-                                    <small class="text-muted">
-                                        <strong>Team Manager:</strong><br>
-                                        Email: manager@demo.com<br>
-                                        Password: demo123<br><br>
-                                        <strong>Team Member:</strong><br>
-                                        Email: member@demo.com<br>
-                                        Password: demo123
-                                    </small>
-                                </div>
-                            </div>
+                        <div class="auth-footer text-center mt-4">
+                            <p class="text-muted">
+                                Chưa có tài khoản? 
+                                <a href="/register" class="text-primary fw-bold">Đăng ký ngay</a>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -184,148 +73,152 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
+<!-- Forgot Password Modal -->
+<div class="modal fade" id="forgotPasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-key me-2 text-primary"></i>Khôi phục mật khẩu
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Step 1: Enter Email -->
+                <div id="forgotStep1">
+                    <p class="text-muted mb-3">
+                        Nhập email của bạn để nhận mã khôi phục mật khẩu
+                    </p>
+                    <form id="forgotPasswordForm">
+                        <div class="mb-3">
+                            <label for="forgot_email" class="form-label">Email</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-envelope"></i>
+                                </span>
+                                <input type="email" class="form-control" id="forgot_email" name="email" required>
+                            </div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-2"></i>Gửi mã khôi phục
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Step 2: Enter OTP and New Password -->
+                <div id="forgotStep2" style="display: none;">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Mã khôi phục đã được gửi đến email của bạn
+                    </div>
+                    <form id="resetPasswordForm">
+                        <div class="mb-3">
+                            <label for="reset_otp" class="form-label">Mã xác thực</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-key"></i>
+                                </span>
+                                <input type="text" class="form-control" id="reset_otp" name="otp_code" 
+                                       maxlength="6" pattern="[0-9]{6}" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="new_password" class="form-label">Mật khẩu mới</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                                <input type="password" class="form-control" id="new_password" name="new_password" 
+                                       minlength="6" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('new_password')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirm_new_password" class="form-label">Xác nhận mật khẩu mới</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                                <input type="password" class="form-control" id="confirm_new_password" 
+                                       minlength="6" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirm_new_password')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check me-2"></i>Cập nhật mật khẩu
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+let forgotEmail = '';
+
 // Toggle password visibility
 function togglePassword(fieldId) {
     const field = document.getElementById(fieldId);
-    const icon = field.nextElementSibling.querySelector('i');
+    const button = field.nextElementSibling;
+    const icon = button.querySelector('i');
     
     if (field.type === 'password') {
         field.type = 'text';
-        icon.classList.replace('fa-eye', 'fa-eye-slash');
+        icon.className = 'fas fa-eye-slash';
     } else {
         field.type = 'password';
-        icon.classList.replace('fa-eye-slash', 'fa-eye');
+        icon.className = 'fas fa-eye';
     }
 }
 
-// Send email OTP
-async function sendEmailOTP() {
-    const email = document.getElementById('email').value;
-    
-    if (!email) {
-        todoApp.showToast('Vui lòng nhập email trước', 'warning');
-        return;
-    }
-    
-    try {
-        const response = await fetch('/api/v1/auth/send-otp', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email: email })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            todoApp.showToast('Mã OTP đã được gửi qua email', 'success');
-        } else {
-            todoApp.showToast(data.detail || 'Không thể gửi OTP', 'error');
-        }
-    } catch (error) {
-        todoApp.showToast('Lỗi kết nối', 'error');
-    }
-}
-
-// Check if user needs 2FA
+// Login form submit
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const formData = new FormData(this);
-    const email = formData.get('email');
-    const password = formData.get('password');
-    
-    // First try login without 2FA
-    const result = await todoApp.login(email, password);
-    
-    if (result.needsOTP) {
-        // Show 2FA section
-        document.getElementById('twoFactorSection').style.display = 'block';
-        document.getElementById('twoFactorSection').scrollIntoView({ behavior: 'smooth' });
-    }
-});
-
-// Auto-fill demo accounts
-function fillDemoAccount(type) {
-    if (type === 'manager') {
-        document.getElementById('email').value = 'manager@demo.com';
-        document.getElementById('password').value = 'demo123';
-    } else if (type === 'member') {
-        document.getElementById('email').value = 'member@demo.com';
-        document.getElementById('password').value = 'demo123';
-    }
-}
-
-// Add click handlers for demo accounts
-document.addEventListener('DOMContentLoaded', function() {
-    const demoTexts = document.querySelectorAll('.card-body small');
-    demoTexts.forEach(text => {
-        text.style.cursor = 'pointer';
-        text.addEventListener('click', function(e) {
-            const text = e.target.textContent;
-            if (text.includes('manager@demo.com')) {
-                fillDemoAccount('manager');
-            } else if (text.includes('member@demo.com')) {
-                fillDemoAccount('member');
-            }
-        });
-    });
-});
-
-// Auto-focus email field và kiểm tra URL parameters
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('email').focus();
-    
-    // Kiểm tra xem có thông báo verify thành công không
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('verified') === '1') {
-        todoApp.showToast('✅ Xác thực email thành công! Bạn có thể đăng nhập.', 'success');
-        
-        // Xóa parameter khỏi URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-});
-
-// Format OTP inputs
-document.getElementById('totp_code').addEventListener('input', function(e) {
-    // Only allow numbers
-    e.target.value = e.target.value.replace(/\D/g, '');
-});
-
-document.getElementById('email_otp').addEventListener('input', function(e) {
-    // Only allow numbers
-    e.target.value = e.target.value.replace(/\D/g, '');
-});
-
-// OTP Login Functions
-let otpCountdownTimer = null;
-
-function showOTPLogin() {
-    document.getElementById('loginForm').style.display = 'none';
-    document.getElementById('otpLoginForm').style.display = 'block';
-}
-
-function showRegularLogin() {
-    document.getElementById('otpLoginForm').style.display = 'none';
-    document.getElementById('loginForm').style.display = 'block';
-    clearOTPCountdown();
-}
-
-async function requestOTP() {
-    const email = document.getElementById('otp_email').value;
-    
-    if (!email) {
-        todoApp.showToast('Vui lòng nhập email', 'warning');
-        return;
-    }
+    const data = Object.fromEntries(formData);
     
     try {
-        const response = await fetch('/api/v1/auth/send-otp', {
+        const response = await fetch('/api/v1/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            localStorage.setItem('access_token', result.access_token);
+            window.location.href = '/dashboard';
+        } else {
+            showAlert(result.detail || 'Đăng nhập thất bại', 'danger');
+        }
+    } catch (error) {
+        showAlert('Có lỗi kết nối. Vui lòng thử lại.', 'danger');
+    }
+});
+
+// Forgot password form submit
+document.getElementById('forgotPasswordForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('forgot_email').value;
+    forgotEmail = email;
+    
+    try {
+        const response = await fetch('/auth/forgot-password', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -333,100 +226,88 @@ async function requestOTP() {
             body: JSON.stringify({ email: email })
         });
         
-        const data = await response.json();
+        const result = await response.json();
         
         if (response.ok) {
-            todoApp.showToast('Mã OTP đã được gửi, có hiệu lực trong 5 phút', 'success');
-            document.getElementById('otpCodeSection').style.display = 'block';
-            document.getElementById('otpLoginButton').disabled = false;
-            document.getElementById('otp_code').focus();
-            startOTPCountdown(300); // 5 phút = 300 giây
+            document.getElementById('forgotStep1').style.display = 'none';
+            document.getElementById('forgotStep2').style.display = 'block';
+            showAlert('Mã khôi phục đã được gửi đến email của bạn', 'success');
         } else {
-            todoApp.showToast(data.detail || 'Không thể gửi OTP', 'error');
+            showAlert(result.detail || 'Có lỗi xảy ra', 'danger');
         }
     } catch (error) {
-        todoApp.showToast('Lỗi kết nối', 'error');
+        showAlert('Có lỗi kết nối. Vui lòng thử lại.', 'danger');
     }
-}
+});
 
-function startOTPCountdown(seconds) {
-    const countdownElement = document.getElementById('otpCountdown');
-    let timeLeft = seconds;
-    
-    otpCountdownTimer = setInterval(() => {
-        const minutes = Math.floor(timeLeft / 60);
-        const secs = timeLeft % 60;
-        countdownElement.textContent = `Mã OTP hết hạn sau: ${minutes}:${secs.toString().padStart(2, '0')}`;
-        
-        if (timeLeft <= 0) {
-            clearOTPCountdown();
-            countdownElement.textContent = 'Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.';
-            document.getElementById('otpLoginButton').disabled = true;
-        }
-        
-        timeLeft--;
-    }, 1000);
-}
-
-function clearOTPCountdown() {
-    if (otpCountdownTimer) {
-        clearInterval(otpCountdownTimer);
-        otpCountdownTimer = null;
-    }
-    document.getElementById('otpCountdown').textContent = '';
-}
-
-// OTP Login Form Handler
-document.getElementById('otpLoginForm').addEventListener('submit', async function(e) {
+// Reset password form submit
+document.getElementById('resetPasswordForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
-    const email = document.getElementById('otp_email').value;
-    const otpCode = document.getElementById('otp_code').value;
+    const newPassword = document.getElementById('new_password').value;
+    const confirmPassword = document.getElementById('confirm_new_password').value;
     
-    if (!email || !otpCode) {
-        todoApp.showToast('Vui lòng nhập đầy đủ thông tin', 'warning');
+    if (newPassword !== confirmPassword) {
+        showAlert('Mật khẩu xác nhận không khớp', 'danger');
         return;
     }
     
-    if (otpCode.length !== 6) {
-        todoApp.showToast('Mã OTP phải có 6 chữ số', 'warning');
-        return;
-    }
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    data.email = forgotEmail;
     
     try {
-        const response = await fetch('/api/v1/auth/login-otp', {
+        const response = await fetch('/auth/reset-password', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                email: email,
-                otp_code: otpCode
-            })
+            body: JSON.stringify(data)
         });
         
-        const data = await response.json();
+        const result = await response.json();
         
         if (response.ok) {
-            // Lưu token
-            localStorage.setItem('access_token', data.access_token);
-            todoApp.showToast('Đăng nhập thành công!', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('forgotPasswordModal')).hide();
+            showAlert('Mật khẩu đã được cập nhật thành công. Vui lòng đăng nhập lại.', 'success');
             
-            // Chuyển hướng
-            setTimeout(() => {
-                window.location.href = '/dashboard';
-            }, 1000);
+            document.getElementById('forgotStep1').style.display = 'block';
+            document.getElementById('forgotStep2').style.display = 'none';
+            document.getElementById('forgotPasswordForm').reset();
+            document.getElementById('resetPasswordForm').reset();
         } else {
-            todoApp.showToast(data.detail || 'Đăng nhập thất bại', 'error');
+            showAlert(result.detail || 'Có lỗi xảy ra', 'danger');
         }
     } catch (error) {
-        todoApp.showToast('Lỗi kết nối', 'error');
+        showAlert('Có lỗi kết nối. Vui lòng thử lại.', 'danger');
     }
 });
 
-// Format OTP code input
-document.getElementById('otp_code').addEventListener('input', function(e) {
-    e.target.value = e.target.value.replace(/\D/g, '');
+// Reset forgot password modal when closed
+document.getElementById('forgotPasswordModal').addEventListener('hidden.bs.modal', function() {
+    document.getElementById('forgotStep1').style.display = 'block';
+    document.getElementById('forgotStep2').style.display = 'none';
+    document.getElementById('forgotPasswordForm').reset();
+    document.getElementById('resetPasswordForm').reset();
 });
+
+// Show alert
+function showAlert(message, type) {
+    const alertContainer = document.createElement('div');
+    alertContainer.className = `alert alert-${type} alert-dismissible fade show`;
+    alertContainer.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.auth-card .card-body');
+    container.insertBefore(alertContainer, container.firstChild);
+    
+    setTimeout(() => {
+        if (alertContainer.parentNode) {
+            alertContainer.remove();
+        }
+    }, 5000);
+}
 </script>
 {% endblock %}

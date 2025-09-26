@@ -7,6 +7,7 @@ from ..database import Base  # Import Base từ database module
 from .user import User
 from .task import Task, TaskStatus, TaskPriority
 from .team import Team, TeamMember
+from .notification import Notification
 
 # Xuất tất cả models để sử dụng trong ứng dụng
 __all__ = [
@@ -16,5 +17,6 @@ __all__ = [
     "TaskStatus", 
     "TaskPriority",
     "Team", 
-    "TeamMember"
+    "TeamMember",
+    "Notification"
 ]

@@ -15,7 +15,7 @@ from ..schemas import (
 )
 from ..middleware.auth import get_current_user
 
-router = APIRouter(prefix="/teams", tags=["Teams"])
+router = APIRouter(prefix="/api/v1/teams", tags=["Teams"])
 
 
 @router.get("/", response_model=List[TeamResponse])
