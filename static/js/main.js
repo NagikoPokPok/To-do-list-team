@@ -287,6 +287,16 @@ class TodoApp {
             throw error;
         }
     }
+    
+    async getUsers() {
+        try {
+            return await this.apiCall('/auth/users');
+        } catch (error) {
+            console.error('Get users error:', error);
+            this.showToast('Không thể tải danh sách người dùng', 'error');
+            throw error;
+        }
+    }
 
     async inviteToTeam(teamId, inviteData) {
         try {

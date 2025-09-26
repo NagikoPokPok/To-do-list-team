@@ -265,8 +265,10 @@ async def update_task(
     
     # Cập nhật các trường
     update_data = task_data.model_dump(exclude_unset=True)
+    print(f"Updating task {task_id} with data: {update_data}")
     
     for field, value in update_data.items():
+        print(f"Setting {field} = {value}")
         if field == "status" and value:
             setattr(task, field, TaskStatus(value))
             # Cập nhật completed_at nếu status là completed
@@ -290,6 +292,7 @@ async def update_task(
     task.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(task)
+    print(f"Task {task_id} updated successfully. assignee_id = {task.assignee_id}")
     
     return task
 
