@@ -415,6 +415,18 @@ async function loadDashboardData() {
         currentTeams = teams;
         allTasks = tasks; // For task editing modal
         
+        // Load users if current user is team manager
+        if (todoApp.user && todoApp.user.role === 'team_manager') {
+            try {
+                window.allUsers = await todoApp.getUsers();
+            } catch (error) {
+                console.warn('Cannot load users:', error);
+                window.allUsers = [];
+            }
+        } else {
+            window.allUsers = [];
+        }
+        
         updateStatistics(tasks);
         renderRecentTasks(tasks);
         populateTeamFilters(teams);
@@ -423,15 +435,26 @@ async function loadDashboardData() {
         
     } catch (error) {
         console.error('Load dashboard data error:', error);
-        document.getElementById('tasksContainer').innerHTML = `
-            <div class="text-center py-4">
-                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
-                <p class="text-muted">Không thể tải dữ liệu. Vui lòng thử lại sau.</p>
-                <button class="btn btn-primary" onclick="loadDashboardData()">
-                    <i class="fas fa-refresh me-2"></i>Thử lại
-                </button>
-            </div>
-        `;
+        // Try to load at least tasks
+        try {
+            const tasks = await todoApp.getTasks({ limit: 20 });
+            currentTasks = tasks;
+            allTasks = tasks;
+            window.allUsers = [];
+            updateStatistics(tasks);
+            renderRecentTasks(tasks);
+        } catch (taskError) {
+            console.error('Cannot load tasks either:', taskError);
+            document.getElementById('tasksContainer').innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <p class="text-muted">Không thể tải dữ liệu. Vui lòng thử lại sau.</p>
+                    <button class="btn btn-primary" onclick="loadDashboardData()">
+                        <i class="fas fa-refresh me-2"></i>Thử lại
+                    </button>
+                </div>
+            `;
+        }
     }
 }
 
@@ -566,12 +589,22 @@ function populateTaskModalOptions(teams) {
         teamSelect.appendChild(option);
     });
     
-    // Add current user as assignee option
-    if (todoApp.user) {
-        const userOption = document.createElement('option');
-        userOption.value = todoApp.user.id;
-        userOption.textContent = todoApp.user.username;
-        assigneeSelect.appendChild(userOption);
+    // Add all users for assignment
+    if (window.allUsers && window.allUsers.length > 0) {
+        window.allUsers.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.id;
+            option.textContent = user.full_name || user.username;
+            assigneeSelect.appendChild(option);
+        });
+    } else {
+        // Fallback: add current user
+        if (todoApp.user) {
+            const userOption = document.createElement('option');
+            userOption.value = todoApp.user.id;
+            userOption.textContent = todoApp.user.full_name || todoApp.user.username;
+            assigneeSelect.appendChild(userOption);
+        }
     }
 }
 
@@ -667,6 +700,15 @@ function clearFilters() {
 
 // Task actions
 async function changeTaskStatus(taskId, status) {
+    // Check if task is being completed and not assigned to anyone
+    if (status === 'completed') {
+        const task = allTasks.find(t => t.id == taskId);
+        if (!task || !task.assigned_to) {
+            alert('Bạn phải giao task cho một người nào đó trước khi hoàn thành!');
+            return;
+        }
+    }
+
     try {
         await todoApp.updateTask(taskId, { status });
         await loadDashboardData();
@@ -741,7 +783,7 @@ async function saveTask() {
         priority: formData.get('priority'),
         status: formData.get('status'),
         team_id: formData.get('team_id') || null,
-        assigned_to: formData.get('assigned_to') || null,
+        assigned_to: formData.get('assigned_to') ? parseInt(formData.get('assigned_to')) : null,
         due_date: formData.get('due_date') || null,
         is_recurring: formData.get('is_recurring') === 'on'
     };

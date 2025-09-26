@@ -7,7 +7,7 @@ phù hợp với frontend hiện tại (register, verify-otp, resend-otp, login,
 """
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from ..database import get_db
 from ..models.user import User
@@ -103,6 +103,28 @@ async def disable_2fa(verify_data: Verify2FA, current_user: User = Depends(get_c
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
     return auth_controller.get_user_profile(current_user)
+
+
+@router.get("/users", response_model=List[UserResponse])
+async def get_users(
+    skip: int = 0,
+    limit: int = 100,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Lấy danh sách users (để assign tasks)
+    Chỉ team manager mới có thể xem danh sách users
+    """
+    if not current_user.is_team_manager():
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ team manager mới có thể xem danh sách users"
+        )
+    
+    users = db.query(User).offset(skip).limit(limit).all()
+    return users
 
 
 # ---- Health / Misc ----
