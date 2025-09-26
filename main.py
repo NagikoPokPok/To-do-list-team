@@ -18,6 +18,17 @@ try:
     print("✅ Database initialized")
 except Exception as e:
     print(f"❌ Database init error: {e}")
+import os
+
+from app.config import settings
+from app.database import engine, Base, ensure_schema
+from app.routers import auth, tasks, teams, notifications, invitations, invitations_user
+
+# Import all models để đảm bảo chúng được tạo trong database
+from app.models import user, team, task, notification
+
+# Đảm bảo schema đã được cập nhật cho database hiện có
+ensure_schema()
 
 # FastAPI app
 app = FastAPI(
@@ -28,6 +39,18 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+@app.get("/teams/{team_id}", response_class=HTMLResponse)
+async def team_detail_page(request: Request, team_id: int):
+    """
+    Trang chi tiết nhóm, bao gồm form mời thành viên
+    """
+    return templates.TemplateResponse("team-detail.html", {
+        "request": request,
+        "app_name": settings.app_name,
+        "team_id": team_id
+    })
+
+# Cấu hình CORS
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -49,6 +72,13 @@ app.include_router(auth_router)
 app.include_router(tasks_router)
 app.include_router(teams_router)
 print("✅ Routers loaded (auth, tasks, teams)")
+# Include routers
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(tasks.router, prefix="/api/v1")
+app.include_router(teams.router, prefix="/api/v1")
+app.include_router(notifications.router, prefix="/api/v1")
+app.include_router(invitations.router, prefix="/api/v1")
+app.include_router(invitations_user.router, prefix="/api/v1")
 
 # Route handlers
 @app.get("/", response_class=HTMLResponse)

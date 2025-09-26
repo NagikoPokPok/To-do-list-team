@@ -5,6 +5,7 @@ CRUD operations cho teams và team members với phân quyền
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func
 from typing import List, Optional
 
 from ..database import get_db
@@ -138,6 +139,7 @@ async def create_team(
     Returns:
         TeamResponse: Team vừa tạo
     """
+
     # Tạo team mới với invite code
     new_team = Team(
         name=team_data.name,
@@ -146,15 +148,25 @@ async def create_team(
         manager_id=current_user.id,
         is_active=True
     )
-    
+
     # Tạo invite code
     new_team.generate_invite_code()
-    
+
     db.add(new_team)
     db.commit()
     db.refresh(new_team)
-    
-    new_team.member_count = 0
+
+    # Thêm manager vào TeamMember
+    manager_member = TeamMember(
+        team_id=new_team.id,
+        user_id=current_user.id,
+        role="manager",
+        is_active=True
+    )
+    db.add(manager_member)
+    db.commit()
+
+    new_team.member_count = 1
     return new_team
 
 
@@ -253,64 +265,49 @@ async def delete_team(
     return Message(message="Team đã được xóa thành công")
 
 
-@router.get("/{team_id}/members", response_model=List[UserResponse])
+from ..schemas import TeamMemberResponse
+
+@router.get("/{team_id}/members", response_model=List[TeamMemberResponse])
 async def get_team_members(
     team_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Lấy danh sách members của team
-    
-    Args:
-        team_id: ID của team
-        current_user: User hiện tại
-        db: Database session
-        
-    Returns:
-        List[UserResponse]: Danh sách members
-        
-    Raises:
-        HTTPException: Nếu team không tồn tại hoặc không có quyền xem
+    Lấy danh sách members của team, trả về cả role
     """
     team = db.query(Team).filter(Team.id == team_id).first()
-    
     if not team:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Không tìm thấy team"
         )
-    
-    # Kiểm tra quyền xem members
-    can_view = False
-    
-    if current_user.is_team_manager() and team.manager_id == current_user.id:
-        can_view = True
-    else:
-        # Kiểm tra user có phải member của team không
-        is_member = db.query(TeamMember).filter(
-            TeamMember.team_id == team_id,
-            TeamMember.user_id == current_user.id,
-            TeamMember.is_active == True
-        ).first()
-        if is_member:
-            can_view = True
-    
-    if not can_view:
+    # Kiểm tra quyền xem team: chỉ cần là thành viên đang hoạt động hoặc là manager_id
+    is_member = db.query(TeamMember).filter(
+        TeamMember.team_id == team_id,
+        TeamMember.user_id == current_user.id,
+        TeamMember.is_active == True
+    ).first()
+    if not (team.manager_id == current_user.id or is_member):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Bạn không có quyền xem danh sách members của team này"
+            detail="Bạn không có quyền xem team này"
         )
-    
-    # Lấy danh sách members
-    members = db.query(User).join(
+    team.member_count = team.get_member_count()
+
+    members = db.query(User, TeamMember).join(
         TeamMember, User.id == TeamMember.user_id
     ).filter(
         TeamMember.team_id == team_id,
         TeamMember.is_active == True
     ).all()
-    
-    return members
+    result = []
+    for user, member in members:
+        user_dict = user.__dict__.copy()
+        user_dict['role'] = member.role
+        user_dict['joined_at'] = member.joined_at
+        result.append(TeamMemberResponse(**user_dict))
+    return result
 
 
 @router.post("/{team_id}/members/{user_id}", response_model=Message)
@@ -462,7 +459,8 @@ async def remove_team_member(
     
     # Xóa member (soft delete)
     member.is_active = False
-    member.left_at = db.func.now()
+    # member.left_at = db.func.now()
+    member.left_at = func.now()
     db.commit()
     
     return Message(message="Đã xóa member khỏi team thành công")

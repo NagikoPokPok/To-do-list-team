@@ -1,3 +1,13 @@
+class UserResponse(UserBase):
+    """Schema response cho User"""
+    id: int
+    is_active: bool
+    is_verified: bool
+    is_2fa_enabled: bool
+    created_at: datetime
+    last_login: Optional[datetime] = None
+    
+    model_config = ConfigDict(from_attributes=True)
 """
 Schemas - Định nghĩa Pydantic models cho request/response
 Validation và serialization dữ liệu API
@@ -47,7 +57,7 @@ class UserBase(BaseModel):
     """Schema cơ bản cho User"""
     email: EmailStr
     username: str = Field(..., min_length=3, max_length=50)
-    full_name: str = Field(..., min_length=1, max_length=100)
+    full_name: Optional[str] = None
     phone_number: Optional[str] = None
 
 
@@ -86,13 +96,17 @@ class PasswordResetConfirm(BaseModel):
     new_password: str = Field(..., min_length=6)
 
 
-class UserResponse(UserBase):
-    """Schema response cho User"""
+
+class TeamMemberResponse(UserBase):
+    """Schema response cho thành viên nhóm, bao gồm thông tin user và role"""
     id: int
     is_active: bool
     is_verified: bool
+    is_2fa_enabled: bool
     created_at: datetime
     last_login: Optional[datetime] = None
+    role: str
+    joined_at: Optional[datetime] = None
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -100,7 +114,8 @@ class UserResponse(UserBase):
 class UserUpdate(BaseModel):
     """Schema để cập nhật thông tin User"""
     full_name: Optional[str] = None
-    avatar: Optional[str] = None
+    phone_number: Optional[str] = None
+    avatar_url: Optional[str] = None
 
 
 # Task Schemas
@@ -187,12 +202,23 @@ class Token(BaseModel):
     """Schema cho access token"""
     access_token: str
     token_type: str = "bearer"
+    expires_in: int
 
 
 class TokenData(BaseModel):
     """Schema cho dữ liệu token"""
     user_id: Optional[int] = None
     email: Optional[str] = None
+
+
+class Enable2FA(BaseModel):
+    """Schema để bật 2FA"""
+    totp_code: str = Field(..., min_length=6, max_length=6)
+
+
+class Verify2FA(BaseModel):
+    """Schema để xác thực 2FA"""
+    totp_code: str = Field(..., min_length=6, max_length=6)
 
 
 # Notification Schemas
@@ -222,7 +248,34 @@ class NotificationCreate(BaseModel):
     related_team_id: Optional[int] = None
 
 
+# Email OTP Schemas
+class EmailOTPRequest(BaseModel):
+    """Schema để yêu cầu OTP qua email"""
+    email: EmailStr
 
+
+# Invitation Schemas
+class InvitationCreate(BaseModel):
+    email: EmailStr
+    team_id: int
+
+class InvitationResponse(BaseModel):
+    id: int
+    email: EmailStr
+    team_id: int
+    invited_by: int
+    token: str
+    is_accepted: bool
+    created_at: datetime
+    accepted_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EmailOTPVerify(BaseModel):
+    """Schema để xác thực OTP email"""
+    email: EmailStr
+    otp_code: str = Field(..., min_length=6, max_length=6)
 
 
 # Response Messages
@@ -236,26 +289,3 @@ class ErrorResponse(BaseModel):
     """Schema cho lỗi"""
     detail: str
     error_code: Optional[str] = None
-
-
-# 2FA Schemas
-class Enable2FA(BaseModel):
-    """Schema để bật 2FA"""
-    pass
-
-
-class Verify2FA(BaseModel):
-    """Schema để xác thực 2FA"""
-    totp_code: str = Field(..., min_length=6, max_length=6, description="Mã TOTP 6 số từ authenticator app")
-
-
-# OTP Schemas
-class EmailOTPRequest(BaseModel):
-    """Schema để yêu cầu gửi OTP qua email"""
-    email: EmailStr
-
-
-class EmailOTPVerify(BaseModel):
-    """Schema để xác thực OTP qua email"""
-    email: EmailStr
-    otp_code: str = Field(..., min_length=6, max_length=6, description="Mã OTP 6 số")
