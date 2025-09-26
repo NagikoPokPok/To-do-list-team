@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     """Lớp cấu hình chính cho ứng dụng"""
     
     # Cấu hình ứng dụng cơ bản
-    app_name: str = "Todo List Clean"
+    app_name: str = "VTeam"
     app_url: str = "http://localhost:8000"
     SECRET_KEY: str = "your-super-secret-key-change-this-in-production"
     ALGORITHM: str = "HS256"

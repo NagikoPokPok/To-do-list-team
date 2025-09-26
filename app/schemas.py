@@ -60,6 +60,7 @@ class UserLogin(BaseModel):
     """Schema để đăng nhập"""
     email: EmailStr
     password: str
+    totp_code: Optional[str] = None
 
 
 class OTPVerify(BaseModel):

@@ -163,6 +163,43 @@
     </div>
 </div>
 
+<!-- 2FA Login Modal -->
+<div class="modal fade" id="twoFALoginModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-shield-alt me-2 text-primary"></i>Xác thực 2 yếu tố
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3">
+                    Nhập mã 6 số từ ứng dụng Authenticator để hoàn tất đăng nhập
+                </p>
+                <form id="twoFALoginForm">
+                    <div class="mb-3">
+                        <label for="totp_code" class="form-label">Mã xác thực</label>
+                        <input type="text" class="form-control text-center" id="totp_code" name="totp_code" 
+                               maxlength="6" pattern="[0-9]{6}" required
+                               style="font-size: 1.5rem; letter-spacing: 0.5rem;">
+                        <div class="form-text">Nhập 6 chữ số từ ứng dụng Authenticator</div>
+                    </div>
+                    
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Hủy
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 let forgotEmail = '';
 
@@ -203,7 +240,47 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
             localStorage.setItem('access_token', result.access_token);
             window.location.href = '/dashboard';
         } else {
-            showAlert(result.detail || 'Đăng nhập thất bại', 'danger');
+            if (result.detail === 'Yêu cầu mã 2FA') {
+                // Show 2FA modal
+                const modal = new bootstrap.Modal(document.getElementById('twoFALoginModal'));
+                modal.show();
+            } else {
+                showAlert(result.detail || 'Đăng nhập thất bại', 'danger');
+            }
+        }
+    } catch (error) {
+        showAlert('Có lỗi kết nối. Vui lòng thử lại.', 'danger');
+    }
+});
+
+// 2FA Login form submit
+document.getElementById('twoFALoginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const totpCode = document.getElementById('totp_code').value;
+    const loginForm = document.getElementById('loginForm');
+    const formData = new FormData(loginForm);
+    const data = Object.fromEntries(formData);
+    data.totp_code = totpCode;
+    
+    try {
+        const response = await fetch('/api/v1/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            localStorage.setItem('access_token', result.access_token);
+            const modal = bootstrap.Modal.getInstance(document.getElementById('twoFALoginModal'));
+            modal.hide();
+            window.location.href = '/dashboard';
+        } else {
+            showAlert(result.detail || 'Mã 2FA không chính xác', 'danger');
         }
     } catch (error) {
         showAlert('Có lỗi kết nối. Vui lòng thử lại.', 'danger');

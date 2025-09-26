@@ -21,7 +21,7 @@ except Exception as e:
 
 # FastAPI app
 app = FastAPI(
-    title="Todo List Clean",
+    title="VTeam",
     description="Simple Todo List Application with OTP Email Authentication",
     version="1.0.0",
     docs_url="/docs",
@@ -56,7 +56,7 @@ async def read_root(request: Request):
     """Home page"""
     return templates.TemplateResponse("index.html", {
         "request": request,
-        "app_name": "Todo List Clean"
+        "app_name": "VTeam"
     })
 
 @app.get("/login", response_class=HTMLResponse)
@@ -64,7 +64,7 @@ async def login_page(request: Request):
     """Login page"""
     return templates.TemplateResponse("login.html", {
         "request": request,
-        "app_name": "Todo List Clean"
+        "app_name": "VTeam"
     })
 
 @app.get("/register", response_class=HTMLResponse)
@@ -72,7 +72,7 @@ async def register_page(request: Request):
     """Register page"""
     return templates.TemplateResponse("register.html", {
         "request": request,
-        "app_name": "Todo List Clean"
+        "app_name": "VTeam"
     })
 
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -80,7 +80,7 @@ async def dashboard_page(request: Request):
     """Dashboard page"""
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
-        "app_name": "Todo List Clean"
+        "app_name": "VTeam"
     })
 
 @app.get("/profile", response_class=HTMLResponse)
@@ -88,7 +88,7 @@ async def profile_page(request: Request):
     """Profile page"""
     return templates.TemplateResponse("profile.html", {
         "request": request,
-        "app_name": "Todo List Clean"
+        "app_name": "VTeam"
     })
 
 @app.get("/teams", response_class=HTMLResponse)
@@ -96,7 +96,7 @@ async def teams_page(request: Request):
     """Teams page"""
     return templates.TemplateResponse("teams.html", {
         "request": request,
-        "app_name": "Todo List Clean"
+        "app_name": "VTeam"
     })
 
 @app.get("/join-team", response_class=HTMLResponse)
@@ -104,7 +104,7 @@ async def join_team_page(request: Request):
     """Join team page"""
     return templates.TemplateResponse("join-team.html", {
         "request": request,
-        "app_name": "Todo List Clean"
+        "app_name": "VTeam"
     })
 
 @app.get("/tasks", response_class=HTMLResponse)
@@ -112,7 +112,7 @@ async def tasks_page(request: Request):
     """Tasks page"""
     return templates.TemplateResponse("tasks.html", {
         "request": request,
-        "app_name": "Todo List Clean"
+        "app_name": "VTeam"
     })
 
 @app.get("/health")

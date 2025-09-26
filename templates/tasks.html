@@ -381,6 +381,7 @@ async function loadTeamMembers() {
         for (const team of allTeams) {
             const members = await todoApp.getTeamMembers(team.id);
             members.forEach(member => {
+                allUsers.push(member);
                 const option1 = new Option(`${member.full_name || member.username} (${team.name})`, member.id);
                 const option2 = new Option(`${member.full_name || member.username}`, member.id);
                 assigneeFilter.appendChild(option1);

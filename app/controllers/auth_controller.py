@@ -364,7 +364,7 @@ class AuthController:
         
         # Tạo TOTP secret và QR code
         secret = self.auth_service.generate_totp_secret()
-        qr_code_uri = self.auth_service.generate_totp_uri(secret, current_user.email)
+        qr_code = self.auth_service.generate_totp_qr_code(current_user.email, secret)
         
         # Tạo backup codes
         backup_codes = self.auth_service.generate_backup_codes()
@@ -377,7 +377,7 @@ class AuthController:
         
         return {
             "secret": secret,
-            "qr_code_uri": qr_code_uri,
+            "qr_code": qr_code,
             "backup_codes": backup_codes,
             "message": "Vui lòng quét QR code bằng Google Authenticator và nhập mã 6 số để hoàn tất việc bật 2FA"
         }
