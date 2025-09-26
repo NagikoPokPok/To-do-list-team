@@ -6,6 +6,8 @@ class TodoApp {
         try {
             const response = await this.apiCall(`/teams/${teamId}/members/${memberId}`, 'DELETE');
             this.showToast('Xóa thành viên thành công!', 'success');
+            document.body.classList.remove('modal-open');
+            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
             return response;
         } catch (error) {
             console.error('Remove from team error:', error);

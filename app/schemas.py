@@ -1,13 +1,4 @@
-class UserResponse(UserBase):
-    """Schema response cho User"""
-    id: int
-    is_active: bool
-    is_verified: bool
-    is_2fa_enabled: bool
-    created_at: datetime
-    last_login: Optional[datetime] = None
-    
-    model_config = ConfigDict(from_attributes=True)
+
 """
 Schemas - Định nghĩa Pydantic models cho request/response
 Validation và serialization dữ liệu API
@@ -60,6 +51,16 @@ class UserBase(BaseModel):
     full_name: Optional[str] = None
     phone_number: Optional[str] = None
 
+class UserResponse(UserBase):
+    """Schema response cho User"""
+    id: int
+    is_active: bool
+    is_verified: bool
+    is_2fa_enabled: bool
+    created_at: datetime
+    last_login: Optional[datetime] = None
+    
+    model_config = ConfigDict(from_attributes=True)
 
 class UserCreate(UserBase):
     """Schema để tạo User mới"""
