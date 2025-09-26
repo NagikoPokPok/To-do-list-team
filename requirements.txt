@@ -6,7 +6,7 @@ bcrypt
 python-jose[cryptography]
 python-multipart
 jinja2
-aiofiles2
+aiofiles
 pydantic
 pydantic-settings
 python-dotenv
