@@ -260,21 +260,27 @@
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="assigned_to" class="form-label">Giao cho</label>
-                                <select class="form-select" id="assigned_to" name="assigned_to">
-                                    <option value="">Chưa giao</option>
+                                <select class="form-select" id="assigned_to" name="assigned_to" disabled>
+                                    <option value="">Chọn nhóm trước để giao cho thành viên</option>
                                 </select>
                             </div>
                         </div>
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="due_date" class="form-label">Ngày bắt đầu</label>
+                                <input type="date" class="form-control" id="start_date" name="start_date">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="due_date" class="form-label">Hạn hoàn thành</label>
                                 <input type="datetime-local" class="form-control" id="due_date" name="due_date">
                             </div>
                         </div>
-                        <div class="col-md-6 d-flex align-items-end">
+                        <div class="col-md-4 d-flex align-items-end">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="is_recurring" name="is_recurring">
                                 <label class="form-check-label" for="is_recurring">
@@ -362,6 +368,7 @@ async function loadInitialData() {
         // Load team members for assignment
         if (allTeams.length > 0) {
             await loadTeamMembers();
+            updateAssigneeFilter(); // Initialize assignee filter
         }
         
     } catch (error) {
@@ -375,17 +382,15 @@ async function loadTeamMembers() {
     
     // Clear existing options except default ones
     assigneeFilter.innerHTML = '<option value="">Tất cả người thực hiện</option><option value="me">Của tôi</option>';
-    assignedToSelect.innerHTML = '<option value="">Chưa giao</option>';
+    assignedToSelect.innerHTML = '<option value="">Chọn nhóm trước để giao cho thành viên</option>';
+    assignedToSelect.disabled = true;
     
     try {
-        // Always add current user first
+        // Always add current user to filter
         if (todoApp.user) {
-            allUsers.push(todoApp.user);
-            const displayName = todoApp.user.full_name || todoApp.user.username;
-            const option1 = new Option(displayName, todoApp.user.id);
-            const option2 = new Option(displayName, todoApp.user.id);
-            assigneeFilter.appendChild(option1);
-            assignedToSelect.appendChild(option2);
+            if (!allUsers.find(u => u.id == todoApp.user.id)) {
+                allUsers.push(todoApp.user);
+            }
         }
         
         // Load all users for assignment (only if team manager)
@@ -395,11 +400,6 @@ async function loadTeamMembers() {
                 // Avoid adding current user again
                 if (!allUsers.find(u => u.id == user.id)) {
                     allUsers.push(user);
-                    const displayName = user.full_name || user.username;
-                    const option1 = new Option(displayName, user.id);
-                    const option2 = new Option(displayName, user.id);
-                    assigneeFilter.appendChild(option1);
-                    assignedToSelect.appendChild(option2);
                 }
             });
         }
@@ -414,17 +414,69 @@ async function loadTeamMembers() {
                 }
             });
         }
+        
+        // Update assignee filter based on current team selection
+        updateAssigneeFilter();
     } catch (error) {
         console.error('Load users error:', error);
         // Fallback: allow current user to assign to themselves
         if (todoApp.user && !allUsers.find(u => u.id == todoApp.user.id)) {
-            const displayName = todoApp.user.full_name || todoApp.user.username;
-            const option1 = new Option(displayName, todoApp.user.id);
-            const option2 = new Option(displayName, todoApp.user.id);
-            assigneeFilter.appendChild(option1);
-            assignedToSelect.appendChild(option2);
             allUsers.push(todoApp.user);
         }
+        updateAssigneeFilter();
+    }
+}
+
+async function updateAssigneeFilter() {
+    const assigneeFilter = document.getElementById('assigneeFilter');
+    const teamFilterValue = document.getElementById('teamFilter').value;
+    
+    // Clear existing options except default ones
+    assigneeFilter.innerHTML = '<option value="">Tất cả người thực hiện</option>';
+    
+    // Always add "Của tôi" option
+    const meOption = new Option('Của tôi', 'me');
+    assigneeFilter.appendChild(meOption);
+    
+    // If a team is selected, add team members to filter
+    if (teamFilterValue) {
+        try {
+            const members = await todoApp.getTeamMembers(teamFilterValue);
+            members.forEach(member => {
+                const displayName = member.full_name || member.username;
+                const option = new Option(displayName, member.id);
+                assigneeFilter.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Load team members for filter error:', error);
+        }
+    }
+    // If no team selected, only "Của tôi" is available
+}
+
+async function loadTeamMembersForAssignment(teamId) {
+    const assignedToSelect = document.getElementById('assigned_to');
+    
+    if (!teamId) {
+        assignedToSelect.innerHTML = '<option value="">Chọn nhóm trước để giao cho thành viên</option>';
+        assignedToSelect.disabled = true;
+        return;
+    }
+    
+    try {
+        assignedToSelect.innerHTML = '<option value="">Chưa giao cho ai</option>';
+        assignedToSelect.disabled = false;
+        
+        const members = await todoApp.getTeamMembers(teamId);
+        members.forEach(member => {
+            const displayName = member.full_name || member.username;
+            const option = new Option(displayName, member.id);
+            assignedToSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Load team members error:', error);
+        assignedToSelect.innerHTML = '<option value="">Lỗi tải thành viên nhóm</option>';
+        assignedToSelect.disabled = true;
     }
 }
 
@@ -630,8 +682,16 @@ function populateTaskForm(task) {
     document.getElementById('priority').value = task.priority;
     document.getElementById('status').value = task.status;
     document.getElementById('team_id').value = task.team_id || '';
-    document.getElementById('assigned_to').value = task.assignee_id || '';
     document.getElementById('is_recurring').checked = task.is_recurring;
+    
+    // Load team members if team is selected, then set assignee value
+    if (task.team_id) {
+        loadTeamMembersForAssignment(task.team_id).then(() => {
+            document.getElementById('assigned_to').value = task.assignee_id || '';
+        });
+    } else {
+        document.getElementById('assigned_to').value = task.assignee_id || '';
+    }
     
     if (task.due_date) {
         const dueDate = new Date(task.due_date);
@@ -643,13 +703,16 @@ async function saveTask() {
     const form = document.getElementById('taskForm');
     const formData = new FormData(form);
     
+    const teamId = formData.get('team_id');
+    const assigneeId = formData.get('assigned_to');
+    
     const taskData = {
         title: formData.get('title'),
         description: formData.get('description'),
         priority: formData.get('priority'),
         status: formData.get('status'),
-        team_id: formData.get('team_id') ? parseInt(formData.get('team_id')) : null,
-        assignee_id: formData.get('assigned_to') ? parseInt(formData.get('assigned_to')) : null,
+        team_id: (teamId && teamId !== '') ? parseInt(teamId) : null,
+        assignee_id: (assigneeId && assigneeId !== '') ? parseInt(assigneeId) : null,
         due_date: formData.get('due_date') || null,
         is_recurring: formData.get('is_recurring') === 'on'
     };
@@ -795,7 +858,11 @@ function setupEventListeners() {
     });
     
     // Filters
-    ['teamFilter', 'statusFilter', 'priorityFilter', 'assigneeFilter', 'searchInput'].forEach(id => {
+    document.getElementById('teamFilter').addEventListener('change', function() {
+        updateAssigneeFilter();
+        displayTasks();
+    });
+    ['statusFilter', 'priorityFilter', 'assigneeFilter', 'searchInput'].forEach(id => {
         document.getElementById(id).addEventListener('change', displayTasks);
     });
     
@@ -805,6 +872,11 @@ function setupEventListeners() {
     document.getElementById('taskForm').addEventListener('submit', function(e) {
         e.preventDefault();
         saveTask();
+    });
+    
+    // Team selection change
+    document.getElementById('team_id').addEventListener('change', function(e) {
+        loadTeamMembersForAssignment(e.target.value);
     });
     
     // Drag over event cleanup
@@ -824,6 +896,7 @@ function clearFilters() {
     document.getElementById('priorityFilter').value = '';
     document.getElementById('assigneeFilter').value = '';
     document.getElementById('searchInput').value = '';
+    updateAssigneeFilter(); // Reset assignee filter when clearing
     displayTasks();
 }
 

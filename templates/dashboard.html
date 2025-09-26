@@ -209,8 +209,8 @@
                     
                     <div class="mb-3">
                         <label for="taskAssignee" class="form-label">Gán cho</label>
-                        <select class="form-select" id="taskAssignee" name="assignee_id">
-                            <option value="">Chưa gán cho ai</option>
+                        <select class="form-select" id="taskAssignee" name="assignee_id" disabled>
+                            <option value="">Chọn nhóm trước để giao cho thành viên</option>
                         </select>
                     </div>
                 </div>
@@ -295,13 +295,19 @@
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="start_date" class="form-label">Ngày bắt đầu</label>
+                                <input type="date" class="form-control" id="start_date" name="start_date">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="due_date" class="form-label">Hạn hoàn thành</label>
                                 <input type="datetime-local" class="form-control" id="due_date" name="due_date">
                             </div>
                         </div>
-                        <div class="col-md-6 d-flex align-items-end">
+                        <div class="col-md-4 d-flex align-items-end">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="is_recurring" name="is_recurring">
                                 <label class="form-check-label" for="is_recurring">
@@ -579,7 +585,8 @@ function populateTaskModalOptions(teams) {
     
     // Clear existing options
     teamSelect.innerHTML = '<option value="">Không thuộc nhóm</option>';
-    assigneeSelect.innerHTML = '<option value="">Chưa giao</option>';
+    assigneeSelect.innerHTML = '<option value="">Chọn nhóm trước để giao cho thành viên</option>';
+    assigneeSelect.disabled = true;
     
     // Add teams
     teams.forEach(team => {
@@ -588,23 +595,31 @@ function populateTaskModalOptions(teams) {
         option.textContent = team.name;
         teamSelect.appendChild(option);
     });
+}
+
+async function loadDashboardTeamMembers(teamId) {
+    const assigneeSelect = document.getElementById('assigned_to');
     
-    // Add all users for assignment
-    if (window.allUsers && window.allUsers.length > 0) {
-        window.allUsers.forEach(user => {
-            const option = document.createElement('option');
-            option.value = user.id;
-            option.textContent = user.full_name || user.username;
+    if (!teamId) {
+        assigneeSelect.innerHTML = '<option value="">Chọn nhóm trước để giao cho thành viên</option>';
+        assigneeSelect.disabled = true;
+        return;
+    }
+    
+    try {
+        assigneeSelect.innerHTML = '<option value="">Chưa giao cho ai</option>';
+        assigneeSelect.disabled = false;
+        
+        const members = await todoApp.getTeamMembers(teamId);
+        members.forEach(member => {
+            const displayName = member.full_name || member.username;
+            const option = new Option(displayName, member.id);
             assigneeSelect.appendChild(option);
         });
-    } else {
-        // Fallback: add current user
-        if (todoApp.user) {
-            const userOption = document.createElement('option');
-            userOption.value = todoApp.user.id;
-            userOption.textContent = todoApp.user.full_name || todoApp.user.username;
-            assigneeSelect.appendChild(userOption);
-        }
+    } catch (error) {
+        console.error('Load team members error:', error);
+        assigneeSelect.innerHTML = '<option value="">Lỗi tải thành viên nhóm</option>';
+        assigneeSelect.disabled = true;
     }
 }
 
@@ -670,6 +685,11 @@ function setupEventListeners() {
     document.getElementById('taskForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         await saveTask();
+    });
+    
+    // Team selection in task modal
+    document.getElementById('team_id').addEventListener('change', function(e) {
+        loadDashboardTeamMembers(e.target.value);
     });
 }
 
@@ -764,8 +784,16 @@ function populateTaskForm(task) {
     document.getElementById('priority').value = task.priority;
     document.getElementById('status').value = task.status;
     document.getElementById('team_id').value = task.team_id || '';
-    document.getElementById('assigned_to').value = task.assigned_to || '';
     document.getElementById('is_recurring').checked = task.is_recurring;
+    
+    // Load team members if team is selected, then set assignee value
+    if (task.team_id) {
+        loadDashboardTeamMembers(task.team_id).then(() => {
+            document.getElementById('assigned_to').value = task.assignee_id || '';
+        });
+    } else {
+        document.getElementById('assigned_to').value = task.assignee_id || '';
+    }
     
     if (task.due_date) {
         const dueDate = new Date(task.due_date);
@@ -777,13 +805,16 @@ async function saveTask() {
     const form = document.getElementById('taskForm');
     const formData = new FormData(form);
     
+    const teamId = formData.get('team_id');
+    const assigneeId = formData.get('assigned_to');
+    
     const taskData = {
         title: formData.get('title'),
         description: formData.get('description'),
         priority: formData.get('priority'),
         status: formData.get('status'),
-        team_id: formData.get('team_id') || null,
-        assigned_to: formData.get('assigned_to') ? parseInt(formData.get('assigned_to')) : null,
+        team_id: (teamId && teamId !== '') ? parseInt(teamId) : null,
+        assignee_id: (assigneeId && assigneeId !== '') ? parseInt(assigneeId) : null,
         due_date: formData.get('due_date') || null,
         is_recurring: formData.get('is_recurring') === 'on'
     };

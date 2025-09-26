@@ -168,6 +168,19 @@ async def create_task(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Không tìm thấy người dùng được gán task"
             )
+        
+        # Nếu có team_id, kiểm tra assignee có phải thành viên của team không
+        if task_data.team_id:
+            team_member = db.query(TeamMember).filter(
+                TeamMember.team_id == task_data.team_id,
+                TeamMember.user_id == task_data.assignee_id,
+                TeamMember.is_active == True
+            ).first()
+            if not team_member:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Người dùng được gán phải là thành viên của nhóm"
+                )
     
     # Kiểm tra team có tồn tại không
     if task_data.team_id:
@@ -284,6 +297,21 @@ async def update_task(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Không tìm thấy người dùng được gán task"
                 )
+            
+            # Nếu task có team_id, kiểm tra assignee có phải thành viên của team không
+            if task.team_id:
+                from ..models.team import TeamMember
+                team_member = db.query(TeamMember).filter(
+                    TeamMember.team_id == task.team_id,
+                    TeamMember.user_id == value,
+                    TeamMember.is_active == True
+                ).first()
+                if not team_member:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Người dùng được gán phải là thành viên của nhóm"
+                    )
+            
             setattr(task, field, value)
         else:
             if value is not None:

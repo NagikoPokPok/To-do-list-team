@@ -1,5 +1,9 @@
 """
-Authentication Router (Consolidated)
+Authentifrom ..schemas import (
+    UserCreate, UserResponse, UserUpdate, UserLogin, Token, Message,
+    Enable2FA, Verify2FA, EmailOTPRequest, EmailOTPVerify, OTPVerify, OTPRequest,
+    PasswordReset, PasswordResetConfirm
+)n Router (Consolidated)
 ===================================
 
 Gộp logic từ router cũ, chuẩn hóa prefix /api/v1/auth và đặt tên endpoint
@@ -12,7 +16,7 @@ from typing import Dict, Any, List
 from ..database import get_db
 from ..models.user import User
 from ..schemas import (
-    UserCreate, UserResponse, UserLogin, Token, Message,
+    UserCreate, UserResponse, UserUpdate, UserLogin, Token, Message,
     Enable2FA, Verify2FA, EmailOTPRequest, EmailOTPVerify, OTPVerify, OTPRequest,
     PasswordReset, PasswordResetConfirm
 )
@@ -103,6 +107,26 @@ async def disable_2fa(verify_data: Verify2FA, current_user: User = Depends(get_c
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
     return auth_controller.get_user_profile(current_user)
+
+
+@router.put("/me", response_model=UserResponse)
+async def update_me(
+    update_data: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Cập nhật thông tin profile của user hiện tại
+    
+    Args:
+        update_data: Dữ liệu cập nhật
+        current_user: User hiện tại
+        db: Database session
+        
+    Returns:
+        UserResponse: Thông tin user đã cập nhật
+    """
+    return auth_controller.update_user_profile(current_user, update_data, db)
 
 
 @router.get("/users", response_model=List[UserResponse])
