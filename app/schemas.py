@@ -1,3 +1,6 @@
+
+# ...existing code...
+
 """
 Schemas - Định nghĩa Pydantic models cho request/response
 Validation và serialization dữ liệu API
@@ -51,6 +54,19 @@ class UserBase(BaseModel):
     phone_number: Optional[str] = None
 
 
+# Đáp ứng import UserResponse cho các router cũ
+class UserResponse(UserBase):
+    """Schema response cho User"""
+    id: int
+    is_active: bool
+    is_verified: bool
+    is_2fa_enabled: bool
+    created_at: datetime
+    last_login: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class UserCreate(UserBase):
     """Schema để tạo User mới"""
     password: str = Field(..., min_length=6)
@@ -64,14 +80,17 @@ class UserLogin(BaseModel):
     email_otp: Optional[str] = None  # Mã OTP từ email
 
 
-class UserResponse(UserBase):
-    """Schema response cho User"""
+
+class TeamMemberResponse(UserBase):
+    """Schema response cho thành viên nhóm, bao gồm thông tin user và role"""
     id: int
     is_active: bool
     is_verified: bool
     is_2fa_enabled: bool
     created_at: datetime
     last_login: Optional[datetime] = None
+    role: str
+    joined_at: Optional[datetime] = None
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -216,6 +235,24 @@ class NotificationCreate(BaseModel):
 class EmailOTPRequest(BaseModel):
     """Schema để yêu cầu OTP qua email"""
     email: EmailStr
+
+
+# Invitation Schemas
+class InvitationCreate(BaseModel):
+    email: EmailStr
+    team_id: int
+
+class InvitationResponse(BaseModel):
+    id: int
+    email: EmailStr
+    team_id: int
+    invited_by: int
+    token: str
+    is_accepted: bool
+    created_at: datetime
+    accepted_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EmailOTPVerify(BaseModel):

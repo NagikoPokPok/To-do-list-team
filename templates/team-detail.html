@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Chi tiết nhóm - {{ app_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.add-member-form {
+    background: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(220,53,69,0.08);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4 text-primary"><i class="fas fa-users me-2"></i>Chi tiết nhóm: <span id="teamName"></span></h2>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="add-member-form mb-4">
+                <h5 class="mb-3">Mời thành viên mới</h5>
+                <form id="inviteMemberForm">
+                    <div class="mb-3">
+                        <label for="inviteEmail" class="form-label">Email thành viên</label>
+                        <input type="email" class="form-control" id="inviteEmail" name="email" required>
+                    </div>
+                    <input type="hidden" id="inviteTeamId" name="team_id">
+                    <button type="submit" class="btn btn-danger"><i class="fas fa-paper-plane me-2"></i>Mời</button>
+                    <span id="inviteStatus" class="ms-3"></span>
+                </form>
+            </div>
+            <div id="teamMembersSection">
+                <!-- Danh sách thành viên sẽ được load ở đây -->
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Thông tin nhóm</h5>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><b>Tên nhóm:</b> <span id="infoTeamName"></span></li>
+                        <li class="list-group-item"><b>Mô tả:</b> <span id="infoTeamDesc"></span></li>
+                        <li class="list-group-item"><b>Quản lý:</b> <span id="infoTeamManager"></span></li>
+                        <li class="list-group-item"><b>Số thành viên:</b> <span id="infoTeamMemberCount"></span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Lấy team_id từ URL (giả sử dạng /teams/{team_id})
+const teamId = window.location.pathname.split('/').pop();
+document.getElementById('inviteTeamId').value = teamId;
+
+// Load thông tin nhóm và thành viên
+function loadTeamDetail() {
+    fetch(`/api/v1/teams/${teamId}`)
+        .then(res => res.json())
+        .then(team => {
+            document.getElementById('teamName').textContent = team.name;
+            document.getElementById('infoTeamName').textContent = team.name;
+            document.getElementById('infoTeamDesc').textContent = team.description || '';
+            document.getElementById('infoTeamManager').textContent = team.manager_id;
+            document.getElementById('infoTeamMemberCount').textContent = team.member_count;
+            // TODO: load danh sách thành viên
+        });
+}
+
+// Xử lý form mời thành viên
+const inviteForm = document.getElementById('inviteMemberForm');
+inviteForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const email = document.getElementById('inviteEmail').value;
+    const team_id = document.getElementById('inviteTeamId').value;
+    fetch('/api/v1/invitations/invite', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + (localStorage.getItem('access_token') || '')
+        },
+        body: JSON.stringify({ email, team_id })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.id) {
+            document.getElementById('inviteStatus').textContent = 'Đã gửi lời mời!';
+            document.getElementById('inviteStatus').className = 'text-success';
+            inviteForm.reset();
+        } else {
+            document.getElementById('inviteStatus').textContent = data.detail || 'Có lỗi xảy ra!';
+            document.getElementById('inviteStatus').className = 'text-danger';
+        }
+    })
+    .catch(() => {
+        document.getElementById('inviteStatus').textContent = 'Có lỗi xảy ra!';
+        document.getElementById('inviteStatus').className = 'text-danger';
+    });
+});
+
+loadTeamDetail();
+</script>
+{% endblock %}
