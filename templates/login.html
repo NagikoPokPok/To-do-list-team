@@ -96,6 +96,60 @@
                         </form>
 
                         <hr class="my-4">
+                        
+                        <!-- OTP Login Section -->
+                        <div class="text-center mb-3">
+                            <button type="button" class="btn btn-outline-info" onclick="showOTPLogin()">
+                                <i class="fas fa-key me-2"></i>Đăng nhập bằng OTP Email
+                            </button>
+                        </div>
+                        
+                        <!-- OTP Login Form -->
+                        <form id="otpLoginForm" style="display: none;">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Đăng nhập bằng mã OTP được gửi qua email (không cần mật khẩu)
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="otp_email" class="form-label">Email</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-envelope"></i>
+                                    </span>
+                                    <input type="email" class="form-control" id="otp_email" name="otp_email" required>
+                                    <button class="btn btn-outline-primary" type="button" onclick="requestOTP()">
+                                        <i class="fas fa-paper-plane"></i> Gửi OTP
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3" id="otpCodeSection" style="display: none;">
+                                <label for="otp_code" class="form-label">Mã OTP</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-key"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="otp_code" name="otp_code" 
+                                           placeholder="6 chữ số" maxlength="6" pattern="[0-9]{6}">
+                                </div>
+                                <div class="form-text text-danger" id="otpCountdown"></div>
+                            </div>
+                            
+                            <div class="d-grid mb-3">
+                                <button type="submit" class="btn btn-info btn-lg" id="otpLoginButton" disabled>
+                                    <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập với OTP
+                                </button>
+                            </div>
+                            
+                            <div class="text-center">
+                                <button type="button" class="btn btn-link" onclick="showRegularLogin()">
+                                    <i class="fas fa-arrow-left me-2"></i>Quay lại đăng nhập thường
+                                </button>
+                            </div>
+                        </form>
+
+                        <hr class="my-4">
 
                         <div class="text-center">
                             <p class="mb-0">
@@ -223,9 +277,18 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Auto-focus email field
+// Auto-focus email field và kiểm tra URL parameters
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('email').focus();
+    
+    // Kiểm tra xem có thông báo verify thành công không
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('verified') === '1') {
+        todoApp.showToast('✅ Xác thực email thành công! Bạn có thể đăng nhập.', 'success');
+        
+        // Xóa parameter khỏi URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
 });
 
 // Format OTP inputs
@@ -236,6 +299,133 @@ document.getElementById('totp_code').addEventListener('input', function(e) {
 
 document.getElementById('email_otp').addEventListener('input', function(e) {
     // Only allow numbers
+    e.target.value = e.target.value.replace(/\D/g, '');
+});
+
+// OTP Login Functions
+let otpCountdownTimer = null;
+
+function showOTPLogin() {
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('otpLoginForm').style.display = 'block';
+}
+
+function showRegularLogin() {
+    document.getElementById('otpLoginForm').style.display = 'none';
+    document.getElementById('loginForm').style.display = 'block';
+    clearOTPCountdown();
+}
+
+async function requestOTP() {
+    const email = document.getElementById('otp_email').value;
+    
+    if (!email) {
+        todoApp.showToast('Vui lòng nhập email', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/v1/auth/send-otp', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email: email })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            todoApp.showToast('Mã OTP đã được gửi, có hiệu lực trong 5 phút', 'success');
+            document.getElementById('otpCodeSection').style.display = 'block';
+            document.getElementById('otpLoginButton').disabled = false;
+            document.getElementById('otp_code').focus();
+            startOTPCountdown(300); // 5 phút = 300 giây
+        } else {
+            todoApp.showToast(data.detail || 'Không thể gửi OTP', 'error');
+        }
+    } catch (error) {
+        todoApp.showToast('Lỗi kết nối', 'error');
+    }
+}
+
+function startOTPCountdown(seconds) {
+    const countdownElement = document.getElementById('otpCountdown');
+    let timeLeft = seconds;
+    
+    otpCountdownTimer = setInterval(() => {
+        const minutes = Math.floor(timeLeft / 60);
+        const secs = timeLeft % 60;
+        countdownElement.textContent = `Mã OTP hết hạn sau: ${minutes}:${secs.toString().padStart(2, '0')}`;
+        
+        if (timeLeft <= 0) {
+            clearOTPCountdown();
+            countdownElement.textContent = 'Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.';
+            document.getElementById('otpLoginButton').disabled = true;
+        }
+        
+        timeLeft--;
+    }, 1000);
+}
+
+function clearOTPCountdown() {
+    if (otpCountdownTimer) {
+        clearInterval(otpCountdownTimer);
+        otpCountdownTimer = null;
+    }
+    document.getElementById('otpCountdown').textContent = '';
+}
+
+// OTP Login Form Handler
+document.getElementById('otpLoginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('otp_email').value;
+    const otpCode = document.getElementById('otp_code').value;
+    
+    if (!email || !otpCode) {
+        todoApp.showToast('Vui lòng nhập đầy đủ thông tin', 'warning');
+        return;
+    }
+    
+    if (otpCode.length !== 6) {
+        todoApp.showToast('Mã OTP phải có 6 chữ số', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/v1/auth/login-otp', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: email,
+                otp_code: otpCode
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Lưu token
+            localStorage.setItem('access_token', data.access_token);
+            todoApp.showToast('Đăng nhập thành công!', 'success');
+            
+            // Chuyển hướng
+            setTimeout(() => {
+                window.location.href = '/dashboard';
+            }, 1000);
+        } else {
+            todoApp.showToast(data.detail || 'Đăng nhập thất bại', 'error');
+        }
+    } catch (error) {
+        todoApp.showToast('Lỗi kết nối', 'error');
+    }
+});
+
+// Format OTP code input
+document.getElementById('otp_code').addEventListener('input', function(e) {
     e.target.value = e.target.value.replace(/\D/g, '');
 });
 </script>

@@ -24,9 +24,22 @@ class TaskPriorityEnum(str, Enum):
     URGENT = "urgent"
 
 
-class UserRoleEnum(str, Enum):
-    TEAM_MANAGER = "team_manager"
-    TEAM_MEMBER = "team_member"
+class NotificationTypeEnum(str, Enum):
+    TASK_ASSIGNED = "task_assigned"
+    TASK_UPDATED = "task_updated"
+    TASK_COMPLETED = "task_completed"
+    TASK_OVERDUE = "task_overdue"
+    TEAM_INVITE = "team_invite"
+    TEAM_JOINED = "team_joined"
+    TEAM_LEFT = "team_left"
+    COMMENT_ADDED = "comment_added"
+
+
+class NotificationPriorityEnum(str, Enum):
+    LOW = "low"
+    NORMAL = "normal"
+    HIGH = "high"
+    URGENT = "urgent"
 
 
 # User Schemas
@@ -41,7 +54,6 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     """Schema để tạo User mới"""
     password: str = Field(..., min_length=6)
-    role: UserRoleEnum = UserRoleEnum.TEAM_MEMBER
 
 
 class UserLogin(BaseModel):
@@ -55,7 +67,6 @@ class UserLogin(BaseModel):
 class UserResponse(UserBase):
     """Schema response cho User"""
     id: int
-    role: str
     is_active: bool
     is_verified: bool
     is_2fa_enabled: bool
@@ -137,10 +148,17 @@ class TeamResponse(TeamBase):
     id: int
     manager_id: int
     is_active: bool
+    invite_code: Optional[str] = None
+    invite_link_active: bool = True
     created_at: datetime
     member_count: int = 0
     
     model_config = ConfigDict(from_attributes=True)
+
+
+class TeamJoinRequest(BaseModel):
+    """Schema để tham gia team bằng invite code"""
+    invite_code: str = Field(..., min_length=16, max_length=16)
 
 
 # Authentication Schemas
@@ -165,6 +183,45 @@ class Enable2FA(BaseModel):
 class Verify2FA(BaseModel):
     """Schema để xác thực 2FA"""
     totp_code: str = Field(..., min_length=6, max_length=6)
+
+
+# Notification Schemas
+class NotificationResponse(BaseModel):
+    """Schema response cho Notification"""
+    id: int
+    title: str
+    message: str
+    notification_type: NotificationTypeEnum
+    priority: NotificationPriorityEnum
+    is_read: bool
+    action_url: Optional[str] = None
+    created_at: datetime
+    read_at: Optional[datetime] = None
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class NotificationCreate(BaseModel):
+    """Schema để tạo Notification"""
+    title: str = Field(..., max_length=255)
+    message: str
+    notification_type: NotificationTypeEnum
+    priority: NotificationPriorityEnum = NotificationPriorityEnum.NORMAL
+    action_url: Optional[str] = None
+    related_task_id: Optional[int] = None
+    related_team_id: Optional[int] = None
+
+
+# Email OTP Schemas
+class EmailOTPRequest(BaseModel):
+    """Schema để yêu cầu OTP qua email"""
+    email: EmailStr
+
+
+class EmailOTPVerify(BaseModel):
+    """Schema để xác thực OTP email"""
+    email: EmailStr
+    otp_code: str = Field(..., min_length=6, max_length=6)
 
 
 # Response Messages

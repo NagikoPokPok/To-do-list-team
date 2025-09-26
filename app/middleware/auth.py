@@ -94,27 +94,7 @@ async def get_current_active_user(
     return current_user
 
 
-async def get_current_team_manager(
-    current_user: User = Depends(get_current_active_user)
-) -> User:
-    """
-    Dependency để kiểm tra user có phải team manager không
-    
-    Args:
-        current_user: User hiện tại
-        
-    Returns:
-        User: Team manager user
-        
-    Raises:
-        HTTPException: Nếu user không phải team manager
-    """
-    if not current_user.is_team_manager():
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Bạn không có quyền truy cập. Chỉ team manager mới có thể thực hiện hành động này."
-        )
-    return current_user
+# Loại bỏ get_current_team_manager dependency vì mọi user đều có thể tạo team
 
 
 async def get_optional_current_user(

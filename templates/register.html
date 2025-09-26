@@ -14,7 +14,7 @@
                             <p>Tạo tài khoản {{ app_name }} miễn phí</p>
                         </div>
 
-                        <form id="registerForm">
+                        <form id="registerForm" class="step-form" data-step="1">
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
@@ -63,19 +63,7 @@
                                 </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label for="role" class="form-label">Vai trò *</label>
-                                <select class="form-select" id="role" name="role" required>
-                                    <option value="team_member">Team Member - Thành viên nhóm</option>
-                                    <option value="team_manager">Team Manager - Quản lý nhóm</option>
-                                </select>
-                                <div class="form-text">
-                                    <small>
-                                        <strong>Team Member:</strong> Có thể tạo và quản lý công việc cá nhân, tham gia nhóm<br>
-                                        <strong>Team Manager:</strong> Có thể tạo nhóm, mời thành viên và quản lý tất cả công việc
-                                    </small>
-                                </div>
-                            </div>
+                            <!-- Đã loại bỏ phân quyền vai trò - mọi user đều có thể tạo và tham gia team -->
 
                             <div class="row">
                                 <div class="col-md-6">
@@ -138,12 +126,37 @@
                                 </label>
                             </div>
 
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary btn-lg">
+                            <div class="d-grid" id="registerSubmitWrapper">
+                                <button type="submit" class="btn btn-primary btn-lg" id="registerSubmitBtn">
                                     <i class="fas fa-user-plus me-2"></i>Tạo tài khoản
                                 </button>
                             </div>
                         </form>
+
+                        <!-- OTP Verification Step (hidden until after register) -->
+                        <div id="otpVerificationSection" class="mt-4 d-none">
+                            <h5 class="mb-3"><i class="fas fa-shield-alt me-2"></i>Xác thực Email</h5>
+                            <p class="text-muted">Chúng tôi đã gửi mã OTP gồm 6 số tới <strong id="verifyEmailDisplay"></strong>. Vui lòng nhập mã để kích hoạt tài khoản.</p>
+                            <form id="verifyOtpForm">
+                                <div class="mb-3">
+                                    <label for="otp_code" class="form-label">Mã OTP</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-key"></i></span>
+                                        <input type="text" maxlength="6" pattern="[0-9]{6}" class="form-control" id="otp_code" required>
+                                        <button class="btn btn-outline-secondary" type="button" id="resendOtpBtn" disabled>
+                                            <span class="resend-label">Gửi lại</span>
+                                            <span class="countdown ms-1"></span>
+                                        </button>
+                                    </div>
+                                    <div class="form-text">Mã có hiệu lực trong 5 phút.</div>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-check-circle me-2"></i>Xác thực tài khoản
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
 
                         <hr class="my-4">
 
@@ -297,25 +310,124 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('email').focus();
     
     // Form validation
-    document.getElementById('registerForm').addEventListener('submit', function(e) {
+    document.getElementById('registerForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        if (this.dataset.step !== '1') return; // Only handle first step
+
         const password = document.getElementById('password').value;
         const confirmPassword = document.getElementById('confirm_password').value;
-        
         if (password !== confirmPassword) {
-            e.preventDefault();
             todoApp.showToast('Mật khẩu xác nhận không khớp', 'error');
             document.getElementById('confirm_password').focus();
             return;
         }
-        
         const { strength } = checkPasswordStrength(password);
         if (strength < 2) {
-            e.preventDefault();
             todoApp.showToast('Mật khẩu quá yếu. Vui lòng tạo mật khẩu mạnh hơn.', 'warning');
             document.getElementById('password').focus();
             return;
         }
+
+        const payload = {
+            email: document.getElementById('email').value.trim(),
+            username: document.getElementById('username').value.trim(),
+            password: password,
+            full_name: document.getElementById('full_name').value.trim() || null,
+            phone_number: document.getElementById('phone_number').value.trim() || null
+        };
+
+        const btn = document.getElementById('registerSubmitBtn');
+        btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xử lý...';
+        try {
+            const res = await fetch('/api/v1/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.detail || data.message || 'Đăng ký thất bại');
+            }
+            todoApp.showToast(data.message || 'Đăng ký thành công! Vui lòng kiểm tra email.', 'success');
+            
+            // Chuyển hướng đến trang verify-email sau 1.5 giây
+            setTimeout(() => {
+                window.location.href = `/verify-email?email=${encodeURIComponent(payload.email)}`;
+            }, 1500);
+        } catch (err) {
+            todoApp.showToast(err.message, 'error');
+        } finally {
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-user-plus me-2"></i>Tạo tài khoản';
+        }
     });
+
+    // Verify OTP form
+    document.getElementById('verifyOtpForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const email = document.getElementById('email').value.trim();
+        const otp = document.getElementById('otp_code').value.trim();
+        if (!/^[0-9]{6}$/.test(otp)) {
+            todoApp.showToast('Mã OTP phải gồm 6 chữ số', 'warning');
+            return;
+        }
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.disabled = true; submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xác thực...';
+        try {
+            const res = await fetch('/api/v1/auth/verify-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, otp_code: otp })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || data.message || 'Xác thực thất bại');
+            todoApp.showToast('Xác thực thành công! Bạn có thể đăng nhập.', 'success');
+            setTimeout(() => { window.location.href = '/login'; }, 1200);
+        } catch (err) {
+            todoApp.showToast(err.message, 'error');
+        } finally {
+            submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fas fa-check-circle me-2"></i>Xác thực tài khoản';
+        }
+    });
+
+    // Resend OTP logic
+    const resendBtn = document.getElementById('resendOtpBtn');
+    resendBtn.addEventListener('click', async function() {
+        if (this.disabled) return;
+        const email = document.getElementById('email').value.trim();
+        try {
+            this.disabled = true;
+            const res = await fetch('/api/v1/auth/resend-registration-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || data.message || 'Không thể gửi lại OTP');
+            todoApp.showToast('Đã gửi lại OTP', 'info');
+            startResendCountdown();
+        } catch (err) {
+            todoApp.showToast(err.message, 'error');
+            this.disabled = false;
+        }
+    });
+
+    let resendInterval;
+    function startResendCountdown(seconds = 45) {
+        clearInterval(resendInterval);
+        const countdownEl = resendBtn.querySelector('.countdown');
+        resendBtn.disabled = true;
+        let remaining = seconds;
+        countdownEl.textContent = `(${remaining}s)`;
+        resendInterval = setInterval(() => {
+            remaining--;
+            countdownEl.textContent = `(${remaining}s)`;
+            if (remaining <= 0) {
+                clearInterval(resendInterval);
+                countdownEl.textContent = '';
+                resendBtn.disabled = false;
+            }
+        }, 1000);
+    }
 });
 
 // Phone number formatting

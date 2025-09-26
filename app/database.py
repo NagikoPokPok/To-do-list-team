@@ -3,7 +3,7 @@ Cấu hình cơ sở dữ liệu SQLite sử dụng SQLAlchemy
 Quản lý kết nối và session database
 """
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from .config import settings
@@ -31,3 +31,33 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def ensure_schema():
+    """Đảm bảo schema mới nhất cho cơ sở dữ liệu hiện có"""
+    inspector = inspect(engine)
+
+    if "teams" in inspector.get_table_names():
+        existing_columns = {col["name"] for col in inspector.get_columns("teams")}
+
+        statements = []
+        if "invite_code" not in existing_columns:
+            statements.append("ALTER TABLE teams ADD COLUMN invite_code VARCHAR(100)")
+        if "invite_link_active" not in existing_columns:
+            statements.append("ALTER TABLE teams ADD COLUMN invite_link_active BOOLEAN DEFAULT 1")
+
+        if statements:
+            with engine.begin() as connection:
+                for statement in statements:
+                    connection.execute(text(statement))
+
+        if "invite_code" not in existing_columns:
+            from .models.team import Team  # Avoid circular import
+
+            session = SessionLocal()
+            try:
+                for team in session.query(Team).filter(Team.invite_code.is_(None)).all():
+                    team.generate_invite_code()
+                session.commit()
+            finally:
+                session.close()

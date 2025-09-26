@@ -10,8 +10,10 @@ import secrets
 from datetime import datetime, timedelta
 from typing import Optional, Union
 
-import bcrypt
 import pyotp
+import qrcode
+import io
+import base64
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 
@@ -70,6 +72,36 @@ class AuthService:
             name=email,
             issuer_name=issuer
         )
+    
+    def generate_totp_qr_code(self, email: str, secret: str) -> str:
+        """
+        Tạo QR code cho Google Authenticator
+        
+        Args:
+            email: Email của user
+            secret: TOTP secret key
+            
+        Returns:
+            str: Base64 encoded QR code image
+        """
+        # Tạo TOTP URI
+        totp_uri = self.generate_totp_uri(secret, email)
+        
+        # Tạo QR code
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+        qr.add_data(totp_uri)
+        qr.make(fit=True)
+        
+        # Chuyển đổi thành image
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        # Convert to base64 string
+        img_buffer = io.BytesIO()
+        img.save(img_buffer, format='PNG')
+        img_buffer.seek(0)
+        img_base64 = base64.b64encode(img_buffer.getvalue()).decode()
+        
+        return f"data:image/png;base64,{img_base64}"
     
     def verify_totp(self, secret: str, token: str) -> bool:
         """Xác minh TOTP token"""

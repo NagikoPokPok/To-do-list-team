@@ -12,8 +12,14 @@ import uvicorn
 import os
 
 from app.config import settings
-from app.database import engine, Base
-from app.routers import auth, tasks, teams
+from app.database import engine, Base, ensure_schema
+from app.routers import auth, tasks, teams, notifications
+
+# Import all models để đảm bảo chúng được tạo trong database
+from app.models import user, team, task, notification
+
+# Đảm bảo schema đã được cập nhật cho database hiện có
+ensure_schema()
 
 # Tạo tất cả tables trong database
 Base.metadata.create_all(bind=engine)
@@ -46,6 +52,7 @@ templates = Jinja2Templates(directory="templates")
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(tasks.router, prefix="/api/v1")
 app.include_router(teams.router, prefix="/api/v1")
+app.include_router(notifications.router, prefix="/api/v1")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -78,6 +85,18 @@ async def register_page(request: Request):
     return templates.TemplateResponse("register.html", {
         "request": request,
         "app_name": settings.app_name
+    })
+
+
+@app.get("/verify-email", response_class=HTMLResponse)
+async def verify_email_page(request: Request, email: str = None):
+    """
+    Trang xác thực email bằng OTP
+    """
+    return templates.TemplateResponse("verify-email.html", {
+        "request": request,
+        "app_name": settings.app_name,
+        "email": email
     })
 
 
@@ -125,6 +144,29 @@ async def profile_page(request: Request):
     })
 
 
+@app.get("/join-team", response_class=HTMLResponse)
+async def join_team_page(request: Request):
+    """
+    Trang tham gia team bằng mã mời
+    """
+    return templates.TemplateResponse("join-team.html", {
+        "request": request,
+        "app_name": settings.app_name
+    })
+
+
+@app.get("/join-team/{invite_code}", response_class=HTMLResponse)
+async def join_team_with_code(request: Request, invite_code: str):
+    """
+    Trang tham gia team với mã mời từ URL
+    """
+    return templates.TemplateResponse("join-team.html", {
+        "request": request,
+        "app_name": settings.app_name,
+        "invite_code": invite_code
+    })
+
+
 @app.get("/health")
 async def health_check():
     """
@@ -163,7 +205,8 @@ if __name__ == "__main__":
     # Chạy ứng dụng với uvicorn
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
+        # host chỉ nên là tên host hoặc IP, không bao gồm cổng (port)
+        host="127.0.0.1",
         port=8000,
         reload=settings.debug,
         log_level="info" if settings.debug else "warning"

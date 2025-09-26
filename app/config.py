@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     
     # Cấu hình ứng dụng cơ bản
     app_name: str = "Todo List Application"
+    app_url: str = "http://localhost:8000"
     secret_key: str = "your-super-secret-key-change-this-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30

@@ -17,7 +17,7 @@ from ..schemas import (
     TaskCreate, TaskUpdate, TaskResponse, Message,
     TaskStatusEnum, TaskPriorityEnum
 )
-from ..middleware.auth import get_current_user, get_current_team_manager
+from ..middleware.auth import get_current_user
 from ..services.email_service import email_service
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
