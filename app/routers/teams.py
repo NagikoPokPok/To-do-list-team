@@ -66,6 +66,52 @@ async def get_teams(
     
     return teams
 
+@router.post("/{team_id}/leave", response_model=Message)
+async def leave_team(
+    team_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Thành viên tự rời khỏi team (không cho phép manager duy nhất rời team)
+    Args:
+        team_id: ID của team
+        current_user: User hiện tại
+        db: Database session
+    Returns:
+        Message: Thông báo thành công
+    Raises:
+        HTTPException: Nếu không phải thành viên hoặc là manager duy nhất
+    """
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy team"
+        )
+    # Kiểm tra user có phải thành viên không
+    member = db.query(TeamMember).filter(
+        TeamMember.team_id == team_id,
+        TeamMember.user_id == current_user.id,
+        TeamMember.is_active == True
+    ).first()
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bạn không phải là thành viên của team này"
+        )
+    # Không cho phép manager duy nhất rời team
+    if team.manager_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Manager không thể tự rời team. Vui lòng chuyển quyền quản lý trước."
+        )
+    # Soft delete thành viên
+    member.is_active = False
+    member.left_at = func.now()
+    db.commit()
+    return Message(message="Bạn đã rời khỏi team thành công")
+
 
 @router.get("/{team_id}", response_model=TeamResponse)
 async def get_team(
