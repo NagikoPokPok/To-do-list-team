@@ -1,14 +1,23 @@
 """
-Main FastAPI Application - Todo List với 2FA và quản lý teams
-Ứng dụng quản lý công việc với xác thực 2 yếu tố và phân quyền team manager/member
+Todo List Application - Clean and Simple
 """
-
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 import uvicorn
+
+# Sử dụng cấu hình database chuẩn từ app.database
+from app.database import Base, engine, ensure_schema
+from app.models import *  # noqa: F401,F403 (đảm bảo load models)
+
+try:
+    Base.metadata.create_all(bind=engine)
+    ensure_schema()
+    print("✅ Database initialized")
+except Exception as e:
+    print(f"❌ Database init error: {e}")
 import os
 
 from app.config import settings
@@ -21,16 +30,13 @@ from app.models import user, team, task, notification
 # Đảm bảo schema đã được cập nhật cho database hiện có
 ensure_schema()
 
-# Tạo tất cả tables trong database
-Base.metadata.create_all(bind=engine)
-
-# Khởi tạo FastAPI app
+# FastAPI app
 app = FastAPI(
-    title=settings.app_name,
-    description="Ứng dụng Todo List với FastAPI, SQLite và 2FA",
+    title="VTeam",
+    description="Simple Todo List Application with OTP Email Authentication",
     version="1.0.0",
-    docs_url="/docs" if settings.debug else None,
-    redoc_url="/redoc" if settings.debug else None,
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
 @app.get("/teams/{team_id}", response_class=HTMLResponse)
@@ -45,20 +51,27 @@ async def team_detail_page(request: Request, team_id: int):
     })
 
 # Cấu hình CORS
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # Frontend URLs
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 
-# Mount static files
+# Static files and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# Cấu hình templates
 templates = Jinja2Templates(directory="templates")
 
+from app.routers.auth import router as auth_router
+from app.routers.tasks import router as tasks_router
+from app.routers.teams import router as teams_router
+
+app.include_router(auth_router)
+app.include_router(tasks_router)
+app.include_router(teams_router)
+print("✅ Routers loaded (auth, tasks, teams)")
 # Include routers
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(tasks.router, prefix="/api/v1")
@@ -67,160 +80,159 @@ app.include_router(notifications.router, prefix="/api/v1")
 app.include_router(invitations.router, prefix="/api/v1")
 app.include_router(invitations_user.router, prefix="/api/v1")
 
-
+# Route handlers
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
-    """
-    Trang chủ ứng dụng Todo List
-    """
+    """Home page"""
     return templates.TemplateResponse("index.html", {
         "request": request,
-        "app_name": settings.app_name
+        "app_name": "VTeam"
     })
-
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    """
-    Trang đăng nhập
-    """
+    """Login page"""
     return templates.TemplateResponse("login.html", {
         "request": request,
-        "app_name": settings.app_name
+        "app_name": "VTeam"
     })
-
 
 @app.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
-    """
-    Trang đăng ký
-    """
+    """Register page"""
     return templates.TemplateResponse("register.html", {
         "request": request,
-        "app_name": settings.app_name
+        "app_name": "VTeam"
     })
-
-
-@app.get("/verify-email", response_class=HTMLResponse)
-async def verify_email_page(request: Request, email: str = None):
-    """
-    Trang xác thực email bằng OTP
-    """
-    return templates.TemplateResponse("verify-email.html", {
-        "request": request,
-        "app_name": settings.app_name,
-        "email": email
-    })
-
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard_page(request: Request):
-    """
-    Trang dashboard chính
-    """
+    """Dashboard page"""
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
-        "app_name": settings.app_name
+        "app_name": "VTeam"
     })
-
-
-@app.get("/tasks", response_class=HTMLResponse)
-async def tasks_page(request: Request):
-    """
-    Trang quản lý tasks
-    """
-    return templates.TemplateResponse("tasks.html", {
-        "request": request,
-        "app_name": settings.app_name
-    })
-
-
-@app.get("/teams", response_class=HTMLResponse)
-async def teams_page(request: Request):
-    """
-    Trang quản lý teams
-    """
-    return templates.TemplateResponse("teams.html", {
-        "request": request,
-        "app_name": settings.app_name
-    })
-
 
 @app.get("/profile", response_class=HTMLResponse)
 async def profile_page(request: Request):
-    """
-    Trang profile và cài đặt 2FA
-    """
+    """Profile page"""
     return templates.TemplateResponse("profile.html", {
         "request": request,
-        "app_name": settings.app_name
+        "app_name": "VTeam"
     })
 
+@app.get("/teams", response_class=HTMLResponse)
+async def teams_page(request: Request):
+    """Teams page"""
+    return templates.TemplateResponse("teams.html", {
+        "request": request,
+        "app_name": "VTeam"
+    })
 
 @app.get("/join-team", response_class=HTMLResponse)
 async def join_team_page(request: Request):
-    """
-    Trang tham gia team bằng mã mời
-    """
+    """Join team page"""
     return templates.TemplateResponse("join-team.html", {
         "request": request,
-        "app_name": settings.app_name
+        "app_name": "VTeam"
     })
 
-
-@app.get("/join-team/{invite_code}", response_class=HTMLResponse)
-async def join_team_with_code(request: Request, invite_code: str):
-    """
-    Trang tham gia team với mã mời từ URL
-    """
-    return templates.TemplateResponse("join-team.html", {
+@app.get("/tasks", response_class=HTMLResponse)
+async def tasks_page(request: Request):
+    """Tasks page"""
+    return templates.TemplateResponse("tasks.html", {
         "request": request,
-        "app_name": settings.app_name,
-        "invite_code": invite_code
+        "app_name": "VTeam"
     })
-
 
 @app.get("/health")
 async def health_check():
-    """
-    Health check endpoint
-    """
+    """Health check endpoint"""
     return {
         "status": "healthy",
-        "app_name": settings.app_name,
-        "environment": settings.environment
+        "version": "1.0.0",
+        "service": "todo_list_clean",
+        "database": "sqlite",
+        "features": [
+            "email_registration_with_otp",
+            "password_login",
+            "password_reset_with_otp",
+            "jwt_authentication"
+        ]
     }
 
-
+# Error handlers
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc: HTTPException):
-    """
-    Custom 404 handler
-    """
-    return templates.TemplateResponse("404.html", {
-        "request": request,
-        "app_name": settings.app_name
-    }, status_code=404)
-
+    """Custom 404 page"""
+    return HTMLResponse("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>404 - Page Not Found</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    </head>
+    <body>
+        <div class="container mt-5">
+            <div class="row justify-content-center">
+                <div class="col-md-6 text-center">
+                    <div class="card">
+                        <div class="card-body">
+                            <h1>404</h1>
+                            <h3>Page Not Found</h3>
+                            <p>The page you're looking for doesn't exist.</p>
+                            <a href="/" class="btn btn-primary">Go Home</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """, status_code=404)
 
 @app.exception_handler(500)
-async def internal_error_handler(request: Request, exc: HTTPException):
-    """
-    Custom 500 handler
-    """
-    return templates.TemplateResponse("500.html", {
-        "request": request,
-        "app_name": settings.app_name
-    }, status_code=500)
-
+async def server_error_handler(request: Request, exc: HTTPException):
+    """Custom 500 page"""
+    return HTMLResponse("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>500 - Server Error</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    </head>
+    <body>
+        <div class="container mt-5">
+            <div class="row justify-content-center">
+                <div class="col-md-6 text-center">
+                    <div class="card">
+                        <div class="card-body">
+                            <h1>500</h1>
+                            <h3>Server Error</h3>
+                            <p>Something went wrong on our end.</p>
+                            <a href="/" class="btn btn-primary">Go Home</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """, status_code=500)
 
 if __name__ == "__main__":
-    # Chạy ứng dụng với uvicorn
+    print("🚀 Starting Todo List Application...")
+    print("📧 Features: OTP Email Registration, Simple Authentication")
+    print("🔗 URLs:")
+    print("   📱 App: http://127.0.0.1:8000")
+    print("   📋 Register: http://127.0.0.1:8000/register")
+    print("   🔑 Login: http://127.0.0.1:8000/login")
+    print("   📚 API Docs: http://127.0.0.1:8000/docs")
+    
     uvicorn.run(
         "main:app",
-        # host chỉ nên là tên host hoặc IP, không bao gồm cổng (port)
         host="127.0.0.1",
         port=8000,
-        reload=settings.debug,
-        log_level="info" if settings.debug else "warning"
+        reload=True,
+        log_level="info"
     )

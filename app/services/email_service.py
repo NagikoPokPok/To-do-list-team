@@ -14,11 +14,11 @@ class EmailService:
     """Service để gửi email"""
     
     def __init__(self):
-        self.smtp_server = settings.smtp_server
-        self.smtp_port = settings.smtp_port
-        self.username = settings.smtp_username
-        self.password = settings.smtp_password
-        self.from_email = settings.email_from
+        self.smtp_server = settings.SMTP_SERVER
+        self.smtp_port = settings.SMTP_PORT
+        self.username = settings.SMTP_USERNAME
+        self.password = settings.SMTP_PASSWORD
+        self.from_email = settings.EMAIL_FROM or settings.SMTP_USERNAME
     
     async def send_email(
         self, 

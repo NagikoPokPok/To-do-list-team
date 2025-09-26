@@ -9,173 +9,160 @@
             <div class="col-md-8 col-lg-6">
                 <div class="auth-card card shadow-lg">
                     <div class="card-body p-5">
-                        <div class="auth-header">
-                            <h2><i class="fas fa-user-plus me-2"></i>Đăng ký</h2>
-                            <p>Tạo tài khoản {{ app_name }} miễn phí</p>
+                        <!-- Header -->
+                        <div class="auth-header text-center mb-4">
+                            <h2><i class="fas fa-user-plus me-2 text-primary"></i>Đăng ký</h2>
+                            <p class="text-muted">Tạo tài khoản {{ app_name }} miễn phí</p>
                         </div>
 
-                        <form id="registerForm" class="step-form" data-step="1">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="email" class="form-label">Email *</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">
-                                                <i class="fas fa-envelope"></i>
-                                            </span>
-                                            <input type="email" class="form-control" id="email" name="email" required>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="username" class="form-label">Tên đăng nhập *</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">
-                                                <i class="fas fa-user"></i>
-                                            </span>
-                                            <input type="text" class="form-control" id="username" name="username" 
-                                                   minlength="3" maxlength="50" required>
-                                        </div>
-                                        <div class="form-text">3-50 ký tự, không chứa khoảng trắng</div>
-                                    </div>
-                                </div>
+                        <!-- Progress Indicator -->
+                        <div class="progress-steps mb-4">
+                            <div class="step active" id="step1-indicator">
+                                <span class="step-number">1</span>
+                                <span class="step-label">Thông tin</span>
                             </div>
-
-                            <div class="mb-3">
-                                <label for="full_name" class="form-label">Họ và tên</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="fas fa-id-card"></i>
-                                    </span>
-                                    <input type="text" class="form-control" id="full_name" name="full_name">
-                                </div>
+                            <div class="step-line"></div>
+                            <div class="step" id="step2-indicator">
+                                <span class="step-number">2</span>
+                                <span class="step-label">Xác thực Email</span>
                             </div>
+                        </div>
 
-                            <div class="mb-3">
-                                <label for="phone_number" class="form-label">Số điện thoại</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="fas fa-phone"></i>
-                                    </span>
-                                    <input type="tel" class="form-control" id="phone_number" name="phone_number">
-                                </div>
-                            </div>
-
-                            <!-- Đã loại bỏ phân quyền vai trò - mọi user đều có thể tạo và tham gia team -->
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="password" class="form-label">Mật khẩu *</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">
-                                                <i class="fas fa-lock"></i>
-                                            </span>
-                                            <input type="password" class="form-control" id="password" name="password" 
-                                                   minlength="6" required>
-                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password')">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                        </div>
-                                        <div class="form-text">Tối thiểu 6 ký tự</div>
-                                    </div>
-                                </div>
-                                
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="confirm_password" class="form-label">Xác nhận mật khẩu *</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">
-                                                <i class="fas fa-lock"></i>
-                                            </span>
-                                            <input type="password" class="form-control" id="confirm_password" 
-                                                   name="confirm_password" minlength="6" required>
-                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirm_password')">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                        </div>
-                                        <div id="passwordMatch" class="form-text"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Password Strength Indicator -->
-                            <div class="mb-3">
-                                <div class="password-strength">
-                                    <div class="progress" style="height: 6px;">
-                                        <div id="passwordStrengthBar" class="progress-bar" role="progressbar" style="width: 0%"></div>
-                                    </div>
-                                    <small id="passwordStrengthText" class="form-text"></small>
-                                </div>
-                            </div>
-
-                            <div class="mb-3 form-check">
-                                <input type="checkbox" class="form-check-input" id="agree_terms" required>
-                                <label class="form-check-label" for="agree_terms">
-                                    Tôi đồng ý với <a href="#" class="text-primary">Điều khoản sử dụng</a> 
-                                    và <a href="#" class="text-primary">Chính sách bảo mật</a> *
-                                </label>
-                            </div>
-
-                            <div class="mb-3 form-check">
-                                <input type="checkbox" class="form-check-input" id="newsletter">
-                                <label class="form-check-label" for="newsletter">
-                                    Nhận thông báo về tính năng mới và cập nhật qua email
-                                </label>
-                            </div>
-
-                            <div class="d-grid" id="registerSubmitWrapper">
-                                <button type="submit" class="btn btn-primary btn-lg" id="registerSubmitBtn">
-                                    <i class="fas fa-user-plus me-2"></i>Tạo tài khoản
-                                </button>
-                            </div>
-                        </form>
-
-                        <!-- OTP Verification Step (hidden until after register) -->
-                        <div id="otpVerificationSection" class="mt-4 d-none">
-                            <h5 class="mb-3"><i class="fas fa-shield-alt me-2"></i>Xác thực Email</h5>
-                            <p class="text-muted">Chúng tôi đã gửi mã OTP gồm 6 số tới <strong id="verifyEmailDisplay"></strong>. Vui lòng nhập mã để kích hoạt tài khoản.</p>
-                            <form id="verifyOtpForm">
+                        <!-- Step 1: Registration Form -->
+                        <div id="registrationStep" class="auth-step">
+                            <form id="registerForm">
                                 <div class="mb-3">
-                                    <label for="otp_code" class="form-label">Mã OTP</label>
+                                    <label for="username" class="form-label">Tên người dùng *</label>
                                     <div class="input-group">
-                                        <span class="input-group-text"><i class="fas fa-key"></i></span>
-                                        <input type="text" maxlength="6" pattern="[0-9]{6}" class="form-control" id="otp_code" required>
-                                        <button class="btn btn-outline-secondary" type="button" id="resendOtpBtn" disabled>
-                                            <span class="resend-label">Gửi lại</span>
-                                            <span class="countdown ms-1"></span>
+                                        <span class="input-group-text">
+                                            <i class="fas fa-user"></i>
+                                        </span>
+                                        <input type="text" class="form-control" id="username" name="username" required>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="full_name" class="form-label">Họ và tên *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-user"></i>
+                                        </span>
+                                        <input type="text" class="form-control" id="full_name" name="full_name" required>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-envelope"></i>
+                                        </span>
+                                        <input type="email" class="form-control" id="email" name="email" required>
+                                    </div>
+                                    <div class="form-text">Mã xác thực sẽ được gửi đến email này</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">Mật khẩu *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-lock"></i>
+                                        </span>
+                                        <input type="password" class="form-control" id="password" name="password" 
+                                               minlength="6" required>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password')">
+                                            <i class="fas fa-eye"></i>
                                         </button>
                                     </div>
-                                    <div class="form-text">Mã có hiệu lực trong 5 phút.</div>
+                                    <div class="form-text">Tối thiểu 6 ký tự</div>
                                 </div>
+
+                                <div class="mb-3">
+                                    <label for="confirm_password" class="form-label">Xác nhận mật khẩu *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-lock"></i>
+                                        </span>
+                                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
+                                               minlength="6" required>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirm_password')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="terms" required>
+                                    <label class="form-check-label" for="terms">
+                                        Tôi đồng ý với <a href="/terms" target="_blank">Điều khoản sử dụng</a> và 
+                                        <a href="/privacy" target="_blank">Chính sách bảo mật</a>
+                                    </label>
+                                </div>
+
                                 <div class="d-grid">
-                                    <button type="submit" class="btn btn-success">
-                                        <i class="fas fa-check-circle me-2"></i>Xác thực tài khoản
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-user-plus me-2"></i>Đăng ký
                                     </button>
                                 </div>
                             </form>
                         </div>
 
-                        <hr class="my-4">
+                        <!-- Step 2: OTP Verification -->
+                        <div id="otpStep" class="auth-step" style="display: none;">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-envelope-open-text text-primary" style="font-size: 3rem;"></i>
+                                <h4 class="mt-3">Xác thực Email</h4>
+                                <p class="text-muted">
+                                    Chúng tôi đã gửi mã xác thực 6 số đến email của bạn
+                                </p>
+                                <p class="fw-bold text-primary" id="registeredEmail"></p>
+                            </div>
 
-                        <div class="text-center">
-                            <p class="mb-0">
-                                Đã có tài khoản? 
-                                <a href="/login" class="text-primary text-decoration-none">
-                                    <i class="fas fa-sign-in-alt me-1"></i>Đăng nhập ngay
-                                </a>
-                            </p>
+                            <form id="otpForm">
+                                <div class="mb-3">
+                                    <label for="otp_code" class="form-label text-center d-block">Nhập mã xác thực</label>
+                                    <div class="otp-input-container">
+                                        <input type="text" class="form-control otp-input text-center" 
+                                               id="otp_code" name="otp_code" maxlength="6" 
+                                               placeholder="000000" pattern="[0-9]{6}" required>
+                                    </div>
+                                    <div class="form-text text-center">Mã có hiệu lực trong 10 phút</div>
+                                </div>
+
+                                <div class="d-grid mb-3">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-check me-2"></i>Xác thực
+                                    </button>
+                                </div>
+
+                                <div class="text-center">
+                                    <p class="text-muted mb-2">Không nhận được mã?</p>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" 
+                                            id="resendOtpBtn" onclick="resendOTP()">
+                                        <i class="fas fa-redo me-2"></i>Gửi lại mã
+                                    </button>
+                                </div>
+                            </form>
                         </div>
 
-                        <!-- Security Notice -->
-                        <div class="mt-4">
-                            <div class="alert alert-info">
-                                <i class="fas fa-shield-alt me-2"></i>
-                                <strong>Bảo mật:</strong> Sau khi đăng ký, chúng tôi khuyến khích bạn bật 
-                                xác thực 2 yếu tố (2FA) để tăng cường bảo mật tài khoản.
-                            </div>
+                        <!-- Success Message -->
+                        <div id="successStep" class="auth-step text-center" style="display: none;">
+                            <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+                            <h3 class="text-success mt-3">Đăng ký thành công!</h3>
+                            <p class="text-muted mb-4">
+                                Tài khoản của bạn đã được kích hoạt. Bạn có thể đăng nhập ngay bây giờ.
+                            </p>
+                            <a href="/login" class="btn btn-primary btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập ngay
+                            </a>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="auth-footer text-center mt-4">
+                            <p class="text-muted">
+                                Đã có tài khoản? 
+                                <a href="/login" class="text-primary fw-bold">Đăng nhập</a>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -183,283 +170,240 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
+<style>
+.progress-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 2rem 0;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+}
+
+.step.active {
+    opacity: 1;
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #6c757d;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+}
+
+.step.active .step-number {
+    background: #007bff;
+}
+
+.step-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.step-line {
+    width: 80px;
+    height: 2px;
+    background: #dee2e6;
+    margin: 0 20px;
+}
+
+.otp-input {
+    font-size: 2rem;
+    font-weight: bold;
+    letter-spacing: 0.5rem;
+    text-align: center;
+    height: 60px;
+}
+</style>
+
 <script>
+let registeredEmail = '';
+
+// Form validation
+function validateForm() {
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    
+    if (password !== confirmPassword) {
+        showAlert('Mật khẩu xác nhận không khớp', 'danger');
+        return false;
+    }
+    
+    return true;
+}
+
 // Toggle password visibility
 function togglePassword(fieldId) {
     const field = document.getElementById(fieldId);
-    const icon = field.nextElementSibling.querySelector('i');
+    const button = field.nextElementSibling;
+    const icon = button.querySelector('i');
     
     if (field.type === 'password') {
         field.type = 'text';
-        icon.classList.replace('fa-eye', 'fa-eye-slash');
+        icon.className = 'fas fa-eye-slash';
     } else {
         field.type = 'password';
-        icon.classList.replace('fa-eye-slash', 'fa-eye');
+        icon.className = 'fas fa-eye';
     }
 }
 
-// Password strength checker
-function checkPasswordStrength(password) {
-    let strength = 0;
-    let feedback = [];
+// Switch to step
+function switchToStep(stepNumber) {
+    document.querySelectorAll('.auth-step').forEach(step => {
+        step.style.display = 'none';
+    });
     
-    if (password.length >= 6) strength += 1;
-    else feedback.push('Tối thiểu 6 ký tự');
-    
-    if (password.length >= 12) strength += 1;
-    else if (password.length >= 8) strength += 0.5;
-    
-    if (/[a-z]/.test(password)) strength += 1;
-    else feedback.push('Chữ thường');
-    
-    if (/[A-Z]/.test(password)) strength += 1;
-    else feedback.push('Chữ hoa');
-    
-    if (/[0-9]/.test(password)) strength += 1;
-    else feedback.push('Số');
-    
-    if (/[^A-Za-z0-9]/.test(password)) strength += 1;
-    else feedback.push('Ký tự đặc biệt');
-    
-    return { strength, feedback };
+    if (stepNumber === 1) {
+        document.getElementById('registrationStep').style.display = 'block';
+        document.getElementById('step1-indicator').classList.add('active');
+        document.getElementById('step2-indicator').classList.remove('active');
+    } else if (stepNumber === 2) {
+        document.getElementById('otpStep').style.display = 'block';
+        document.getElementById('step1-indicator').classList.remove('active');
+        document.getElementById('step2-indicator').classList.add('active');
+    } else if (stepNumber === 3) {
+        document.getElementById('successStep').style.display = 'block';
+        document.getElementById('step1-indicator').classList.add('active');
+        document.getElementById('step2-indicator').classList.add('active');
+    }
 }
 
-// Update password strength indicator
-function updatePasswordStrength() {
-    const password = document.getElementById('password').value;
-    const strengthBar = document.getElementById('passwordStrengthBar');
-    const strengthText = document.getElementById('passwordStrengthText');
+// Registration form submit
+document.getElementById('registerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
     
-    if (!password) {
-        strengthBar.style.width = '0%';
-        strengthBar.className = 'progress-bar';
-        strengthText.textContent = '';
+    if (!validateForm()) {
         return;
     }
     
-    const { strength, feedback } = checkPasswordStrength(password);
-    const percentage = (strength / 6) * 100;
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
     
-    strengthBar.style.width = percentage + '%';
-    
-    if (percentage < 40) {
-        strengthBar.className = 'progress-bar bg-danger';
-        strengthText.textContent = 'Yếu - Cần: ' + feedback.join(', ');
-        strengthText.className = 'form-text text-danger';
-    } else if (percentage < 70) {
-        strengthBar.className = 'progress-bar bg-warning';
-        strengthText.textContent = 'Trung bình - Nên thêm: ' + feedback.join(', ');
-        strengthText.className = 'form-text text-warning';
-    } else {
-        strengthBar.className = 'progress-bar bg-success';
-        strengthText.textContent = 'Mạnh - Mật khẩu tốt!';
-        strengthText.className = 'form-text text-success';
-    }
-}
-
-// Check password match
-function checkPasswordMatch() {
-    const password = document.getElementById('password').value;
-    const confirmPassword = document.getElementById('confirm_password').value;
-    const matchText = document.getElementById('passwordMatch');
-    
-    if (!confirmPassword) {
-        matchText.textContent = '';
-        return;
-    }
-    
-    if (password === confirmPassword) {
-        matchText.textContent = 'Mật khẩu khớp';
-        matchText.className = 'form-text text-success';
-    } else {
-        matchText.textContent = 'Mật khẩu không khớp';
-        matchText.className = 'form-text text-danger';
-    }
-}
-
-// Validate username format
-function validateUsername() {
-    const username = document.getElementById('username').value;
-    const field = document.getElementById('username');
-    
-    if (!username) return;
-    
-    // Remove spaces and special characters except underscore and dash
-    const cleaned = username.replace(/[^\w-]/g, '');
-    if (cleaned !== username) {
-        field.value = cleaned;
-    }
-}
-
-// Event listeners
-document.addEventListener('DOMContentLoaded', function() {
-    // Password strength
-    document.getElementById('password').addEventListener('input', updatePasswordStrength);
-    
-    // Password match
-    document.getElementById('confirm_password').addEventListener('input', checkPasswordMatch);
-    document.getElementById('password').addEventListener('input', checkPasswordMatch);
-    
-    // Username validation
-    document.getElementById('username').addEventListener('input', validateUsername);
-    
-    // Auto-focus email field
-    document.getElementById('email').focus();
-    
-    // Form validation
-    document.getElementById('registerForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        if (this.dataset.step !== '1') return; // Only handle first step
-
-        const password = document.getElementById('password').value;
-        const confirmPassword = document.getElementById('confirm_password').value;
-        if (password !== confirmPassword) {
-            todoApp.showToast('Mật khẩu xác nhận không khớp', 'error');
-            document.getElementById('confirm_password').focus();
-            return;
+    try {
+        const response = await fetch('/api/v1/auth/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            registeredEmail = data.email;
+            document.getElementById('registeredEmail').textContent = registeredEmail;
+            switchToStep(2);
+            showAlert(result.message, 'success');
+        } else {
+            showAlert(result.detail || 'Đăng ký thất bại', 'danger');
         }
-        const { strength } = checkPasswordStrength(password);
-        if (strength < 2) {
-            todoApp.showToast('Mật khẩu quá yếu. Vui lòng tạo mật khẩu mạnh hơn.', 'warning');
-            document.getElementById('password').focus();
-            return;
-        }
-
-        const payload = {
-            email: document.getElementById('email').value.trim(),
-            username: document.getElementById('username').value.trim(),
-            password: password,
-            full_name: document.getElementById('full_name').value.trim() || null,
-            phone_number: document.getElementById('phone_number').value.trim() || null
-        };
-
-        const btn = document.getElementById('registerSubmitBtn');
-        btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xử lý...';
-        try {
-            const res = await fetch('/api/v1/auth/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
-            if (!res.ok) {
-                throw new Error(data.detail || data.message || 'Đăng ký thất bại');
-            }
-            todoApp.showToast(data.message || 'Đăng ký thành công! Vui lòng kiểm tra email.', 'success');
-            
-            // Chuyển hướng đến trang verify-email sau 1.5 giây
-            setTimeout(() => {
-                window.location.href = `/verify-email?email=${encodeURIComponent(payload.email)}`;
-            }, 1500);
-        } catch (err) {
-            todoApp.showToast(err.message, 'error');
-        } finally {
-            btn.disabled = false; btn.innerHTML = '<i class="fas fa-user-plus me-2"></i>Tạo tài khoản';
-        }
-    });
-
-    // Verify OTP form
-    document.getElementById('verifyOtpForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const email = document.getElementById('email').value.trim();
-        const otp = document.getElementById('otp_code').value.trim();
-        if (!/^[0-9]{6}$/.test(otp)) {
-            todoApp.showToast('Mã OTP phải gồm 6 chữ số', 'warning');
-            return;
-        }
-        const submitBtn = this.querySelector('button[type="submit"]');
-        submitBtn.disabled = true; submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xác thực...';
-        try {
-            const res = await fetch('/api/v1/auth/verify-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email, otp_code: otp })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.detail || data.message || 'Xác thực thất bại');
-            todoApp.showToast('Xác thực thành công! Bạn có thể đăng nhập.', 'success');
-            setTimeout(() => { window.location.href = '/login'; }, 1200);
-        } catch (err) {
-            todoApp.showToast(err.message, 'error');
-        } finally {
-            submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fas fa-check-circle me-2"></i>Xác thực tài khoản';
-        }
-    });
-
-    // Resend OTP logic
-    const resendBtn = document.getElementById('resendOtpBtn');
-    resendBtn.addEventListener('click', async function() {
-        if (this.disabled) return;
-        const email = document.getElementById('email').value.trim();
-        try {
-            this.disabled = true;
-            const res = await fetch('/api/v1/auth/resend-registration-otp', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.detail || data.message || 'Không thể gửi lại OTP');
-            todoApp.showToast('Đã gửi lại OTP', 'info');
-            startResendCountdown();
-        } catch (err) {
-            todoApp.showToast(err.message, 'error');
-            this.disabled = false;
-        }
-    });
-
-    let resendInterval;
-    function startResendCountdown(seconds = 45) {
-        clearInterval(resendInterval);
-        const countdownEl = resendBtn.querySelector('.countdown');
-        resendBtn.disabled = true;
-        let remaining = seconds;
-        countdownEl.textContent = `(${remaining}s)`;
-        resendInterval = setInterval(() => {
-            remaining--;
-            countdownEl.textContent = `(${remaining}s)`;
-            if (remaining <= 0) {
-                clearInterval(resendInterval);
-                countdownEl.textContent = '';
-                resendBtn.disabled = false;
-            }
-        }, 1000);
+    } catch (error) {
+        showAlert('Có lỗi kết nối. Vui lòng thử lại.', 'danger');
     }
 });
 
-// Phone number formatting
-document.getElementById('phone_number').addEventListener('input', function(e) {
-    // Remove non-numeric characters
-    let value = e.target.value.replace(/\D/g, '');
+// OTP form submit
+document.getElementById('otpForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
     
-    // Format as phone number
-    if (value.length > 0) {
-        if (value.startsWith('84')) {
-            // International format
-            value = '+84 ' + value.substring(2);
-        } else if (value.startsWith('0')) {
-            // Domestic format
-            value = value.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3');
+    const otpCode = document.getElementById('otp_code').value;
+    
+    try {
+        const response = await fetch('/api/v1/auth/verify-otp', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: registeredEmail,
+                otp_code: otpCode
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            switchToStep(3);
+        } else {
+            showAlert(result.detail || 'Mã OTP không hợp lệ', 'danger');
+            document.getElementById('otp_code').value = '';
+            document.getElementById('otp_code').focus();
         }
+    } catch (error) {
+        showAlert('Có lỗi kết nối. Vui lòng thử lại.', 'danger');
     }
-    
-    e.target.value = value;
 });
 
-// Role selection helper
-document.getElementById('role').addEventListener('change', function(e) {
-    const roleInfo = {
-        'team_member': 'Bạn sẽ có thể tạo và quản lý công việc cá nhân, tham gia các nhóm làm việc.',
-        'team_manager': 'Bạn sẽ có thể tạo nhóm, mời thành viên, và quản lý tất cả công việc trong nhóm.'
-    };
+// Resend OTP
+async function resendOTP() {
+    const btn = document.getElementById('resendOtpBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang gửi...';
     
-    const selectedRole = e.target.value;
-    if (roleInfo[selectedRole]) {
-        todoApp.showToast(roleInfo[selectedRole], 'info');
+    try {
+        const response = await fetch('/auth/resend-otp', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: registeredEmail
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showAlert('Mã xác thực mới đã được gửi', 'success');
+        } else {
+            showAlert(result.detail || 'Không thể gửi lại mã', 'danger');
+        }
+    } catch (error) {
+        showAlert('Có lỗi kết nối. Vui lòng thử lại.', 'danger');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-redo me-2"></i>Gửi lại mã';
     }
+}
+
+// Auto format OTP input
+document.getElementById('otp_code').addEventListener('input', function(e) {
+    this.value = this.value.replace(/\D/g, '').substring(0, 6);
 });
+
+// Show alert
+function showAlert(message, type) {
+    const alertContainer = document.createElement('div');
+    alertContainer.className = `alert alert-${type} alert-dismissible fade show`;
+    alertContainer.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.auth-card .card-body');
+    container.insertBefore(alertContainer, container.firstChild);
+    
+    setTimeout(() => {
+        if (alertContainer.parentNode) {
+            alertContainer.remove();
+        }
+    }, 5000);
+}
 </script>
 {% endblock %}

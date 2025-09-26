@@ -572,8 +572,7 @@ class TodoApp {
             username: formData.get('username'),
             password: formData.get('password'),
             full_name: formData.get('full_name'),
-            phone_number: formData.get('phone_number'),
-            role: formData.get('role')
+            phone_number: formData.get('phone_number')
         };
         
         // Kiểm tra password confirmation

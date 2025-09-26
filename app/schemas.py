@@ -1,6 +1,13 @@
-
-# ...existing code...
-
+class UserResponse(UserBase):
+    """Schema response cho User"""
+    id: int
+    is_active: bool
+    is_verified: bool
+    is_2fa_enabled: bool
+    created_at: datetime
+    last_login: Optional[datetime] = None
+    
+    model_config = ConfigDict(from_attributes=True)
 """
 Schemas - Định nghĩa Pydantic models cho request/response
 Validation và serialization dữ liệu API
@@ -54,19 +61,6 @@ class UserBase(BaseModel):
     phone_number: Optional[str] = None
 
 
-# Đáp ứng import UserResponse cho các router cũ
-class UserResponse(UserBase):
-    """Schema response cho User"""
-    id: int
-    is_active: bool
-    is_verified: bool
-    is_2fa_enabled: bool
-    created_at: datetime
-    last_login: Optional[datetime] = None
-
-    model_config = ConfigDict(from_attributes=True)
-
-
 class UserCreate(UserBase):
     """Schema để tạo User mới"""
     password: str = Field(..., min_length=6)
@@ -76,8 +70,30 @@ class UserLogin(BaseModel):
     """Schema để đăng nhập"""
     email: EmailStr
     password: str
-    totp_code: Optional[str] = None  # Mã 2FA từ authenticator app
-    email_otp: Optional[str] = None  # Mã OTP từ email
+    totp_code: Optional[str] = None
+
+
+class OTPVerify(BaseModel):
+    """Schema để xác thực OTP"""
+    email: EmailStr
+    otp_code: str = Field(..., min_length=6, max_length=6)
+
+
+class OTPRequest(BaseModel):
+    """Schema để yêu cầu gửi lại OTP"""
+    email: EmailStr
+
+
+class PasswordReset(BaseModel):
+    """Schema để yêu cầu reset mật khẩu"""
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    """Schema để xác nhận reset mật khẩu"""
+    email: EmailStr
+    otp_code: str = Field(..., min_length=6, max_length=6)
+    new_password: str = Field(..., min_length=6)
 
 
 
