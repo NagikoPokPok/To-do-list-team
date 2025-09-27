@@ -284,7 +284,7 @@ document.getElementById('registerForm').addEventListener('submit', async functio
     // Prevent duplicate submissions
     const submitBtn = this.querySelector('button[type="submit"]');
     if (submitBtn.disabled) {
-        console.log('🚫 Duplicate submission prevented');
+        console.log(' Duplicate submission prevented');
         return;
     }
     
@@ -294,7 +294,7 @@ document.getElementById('registerForm').addEventListener('submit', async functio
     const formData = new FormData(this);
     const data = Object.fromEntries(formData);
     
-    console.log('📝 Registering with email:', data.email);
+    console.log(' Registering with email:', data.email);
     
     try {
         const response = await fetch('/api/v1/auth/register', {
@@ -396,22 +396,28 @@ document.getElementById('otp_code').addEventListener('input', function(e) {
 });
 
 // Show alert
+// ...existing code...
 function showAlert(message, type) {
+    // Nếu có todoApp và có showToast thì dùng toast
+    if (window.todoApp && typeof todoApp.showToast === 'function') {
+        todoApp.showToast(message, type === 'danger' ? 'error' : type);
+        return;
+    }
+    // Nếu không thì fallback về alert cũ
     const alertContainer = document.createElement('div');
     alertContainer.className = `alert alert-${type} alert-dismissible fade show`;
     alertContainer.innerHTML = `
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    
     const container = document.querySelector('.auth-card .card-body');
     container.insertBefore(alertContainer, container.firstChild);
-    
     setTimeout(() => {
         if (alertContainer.parentNode) {
             alertContainer.remove();
         }
     }, 5000);
 }
+// ...existing code...
 </script>
 {% endblock %}
