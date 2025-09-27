@@ -13,7 +13,7 @@ from fastapi import HTTPException, status
 from ..models.user import User
 from ..schemas import (
     UserCreate, UserResponse, UserLogin, Token, Message,
-    Enable2FA, Verify2FA, EmailOTPRequest, EmailOTPVerify
+    Enable2FA, Verify2FA, EmailOTPRequest, EmailOTPVerify, UserUpdate
 )
 from ..services.auth_service import AuthService
 from ..services.email_service import email_service
@@ -475,3 +475,30 @@ class AuthController:
             created_at=current_user.created_at,
             last_login=current_user.last_login
         )
+    
+    def update_user_profile(self, current_user: User, update_data: UserUpdate, db: Session) -> UserResponse:
+        """
+        Cập nhật thông tin profile user hiện tại
+        
+        Args:
+            current_user: User hiện tại
+            update_data: Dữ liệu cập nhật
+            db: Database session
+            
+        Returns:
+            UserResponse: Thông tin user đã cập nhật
+        """
+        # Cập nhật các trường được phép
+        update_dict = update_data.model_dump(exclude_unset=True)
+        
+        for field, value in update_dict.items():
+            if hasattr(current_user, field):
+                setattr(current_user, field, value)
+        
+        # Cập nhật thời gian
+        current_user.updated_at = datetime.utcnow()
+        
+        db.commit()
+        db.refresh(current_user)
+        
+        return self.get_user_profile(current_user)
