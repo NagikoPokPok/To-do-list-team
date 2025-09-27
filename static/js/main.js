@@ -51,58 +51,62 @@ class TodoApp {
     
     // === Authentication Methods ===
     
-    async login(email, password, totpCode = null, emailOtp = null) {
-        try {
-            this.showLoading();
-            
-            const response = await fetch(`${this.baseURL}/auth/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email: email,
-                    password: password,
-                    totp_code: totpCode,
-                    email_otp: emailOtp
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (!response.ok) {
-                if (response.status === 202) {
-                    // Cần OTP email
-                    this.showToast('Mã OTP đã được gửi qua email', 'info');
-                    return { needsOTP: true };
-                }
-                throw new Error(data.detail || 'Đăng nhập thất bại');
+   // ...existing code...
+async login(email, password, totpCode = null, emailOtp = null) {
+    try {
+        this.showLoading();
+        
+        const response = await fetch(`${this.baseURL}/auth/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: email,
+                password: password,
+                totp_code: totpCode,
+                email_otp: emailOtp
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            if (response.status === 202) {
+                // Cần OTP email
+                this.showToast('Mã OTP đã được gửi qua email', 'info');
+                return { needsOTP: true };
             }
-            
-            // Lưu token và thông tin user
-            this.token = data.access_token;
-            localStorage.setItem('access_token', this.token);
-            
-            // Lấy thông tin user
-            await this.getCurrentUser();
-            
-            this.showToast('Đăng nhập thành công!', 'success');
-            
-            // Redirect về dashboard
-            setTimeout(() => {
-                window.location.href = '/dashboard';
-            }, 1000);
-            
-            return { success: true };
-            
-        } catch (error) {
-            console.error('Login error:', error);
-            this.showToast(error.message, 'error');
-            return { success: false, error: error.message };
-        } finally {
-            this.hideLoading();
+            throw new Error(data.detail || 'Đăng nhập thất bại');
         }
+        
+        // Lưu token và thông tin user
+        this.token = data.access_token;
+        localStorage.setItem('access_token', this.token);
+        
+        // Lấy thông tin user
+        await this.getCurrentUser();
+
+        this.updateNavigation();
+        
+        this.showToast('Đăng nhập thành công!', 'success');
+        
+        // Redirect về dashboard
+        setTimeout(() => {
+        window.location.href = '/dashboard';
+        }, 1000);
+        window.location.reload();
+        return { success: true };
+        
+    } catch (error) {
+        console.error('Login error:', error);
+        this.showToast(error.message, 'error');
+        return { success: false, error: error.message };
+    } finally {
+        this.hideLoading();
     }
+}
+// ...existing code...
     
     // Removed register method - registration handled by register.html inline JS
     
@@ -415,21 +419,19 @@ class TodoApp {
     }
     
     updateNavigation() {
-        const userDropdown = document.getElementById('userDropdown');
-        const loginLink = document.getElementById('loginLink');
-        const userName = document.getElementById('userName');
-        
-        if (this.user && userDropdown && loginLink && userName) {
-            // Hiển thị thông tin user
-            userName.textContent = this.user.full_name || this.user.email.split('@')[0];
-            userDropdown.style.display = 'block';
-            loginLink.style.display = 'none';
-        } else if (userDropdown && loginLink) {
-            // Hiển thị link đăng nhập
-            userDropdown.style.display = 'none';
-            loginLink.style.display = 'block';
-        }
+    const userDropdown = document.getElementById('userDropdown');
+    const loginLink = document.getElementById('loginLink');
+    const userName = document.getElementById('userName');
+    this.user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (this.user && userDropdown && userName) {
+        userName.textContent = this.user.full_name || (this.user.email ? this.user.email.split('@')[0] : 'User');
+        userDropdown.style.display = '';
+        if (loginLink) loginLink.style.display = 'none';
+    } else {
+        if (userDropdown) userDropdown.style.display = 'none';
+        if (loginLink) loginLink.style.display = '';
     }
+}
     
     showToast(message, type = 'info') {
         const toast = document.getElementById('toast');
@@ -608,6 +610,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.todoApp = new TodoApp();
     if (window.todoApp && window.todoApp.token) {
         await updateNotificationBell();
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.todoApp) {
+        window.todoApp.updateNavigation();
     }
 });
 
