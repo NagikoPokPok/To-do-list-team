@@ -43,13 +43,30 @@ class AuthController:
         Raises:
             HTTPException: Nếu email đã tồn tại
         """
-        # Kiểm tra email đã tồn tại
-        existing_email = db.query(User).filter(User.email == user_data.email).first()
-        if existing_email:
+        # Kiểm tra email đã tồn tại và đã được xác thực
+        print(f"🔍 Checking email: {user_data.email}")
+        verified_user = db.query(User).filter(
+            User.email == user_data.email, 
+            User.is_verified == True
+        ).first()
+        if verified_user:
+            print(f"❌ Email already verified: {verified_user.email} (ID: {verified_user.id})")
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Email đã được sử dụng"
             )
+        
+        # Xóa user chưa xác thực cũ nếu có (để cho phép đăng ký lại)
+        unverified_user = db.query(User).filter(
+            User.email == user_data.email,
+            User.is_verified == False
+        ).first()
+        if unverified_user:
+            print(f"🗑️ Removing old unverified user: {unverified_user.email}")
+            db.delete(unverified_user)
+            db.commit()
+        
+        print(f"✅ Email available: {user_data.email}")
         
         # Hash password
         hashed_password = self.auth_service.get_password_hash(user_data.password)
@@ -57,14 +74,14 @@ class AuthController:
         # Tạo OTP cho email verification
         otp_code = generate_email_otp()
         
-        # Tạo user mới (chưa xác thực)
+        # Tạo user mới (chưa xác thực) - CHỈ sau khi xác thực OTP mới set is_verified=True
         new_user = User(
             email=user_data.email,
             hashed_password=hashed_password,
             full_name=user_data.full_name,
             phone_number=user_data.phone_number,
             is_active=True,
-            is_verified=False,  # Chưa xác thực
+            is_verified=False,  # Chưa xác thực - quan trọng!
             email_otp=otp_code,
             email_otp_expiry=datetime.utcnow() + timedelta(minutes=5)
         )
@@ -205,7 +222,7 @@ class AuthController:
         if not user.is_verified:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Vui lòng xác thực email trước khi đăng nhập"
+                detail="Tài khoản chưa được xác thực. Vui lòng kiểm tra email và xác thực tài khoản trước khi đăng nhập."
             )
         
         # Kiểm tra 2FA nếu đã bật

@@ -5,11 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models.user import User
+from ..models import Invitation  # Import Invitation model from models package
 from ..schemas import InvitationCreate, InvitationResponse, Message
 from ..services import invitation_service
 from ..middleware.auth import get_current_user
 
-router = APIRouter(prefix="/invitations", tags=["Invitations"])
+router = APIRouter(prefix="/api/v1/invitations", tags=["Invitations"])
 
 @router.post("/invite", response_model=InvitationResponse)
 def invite_member(
@@ -36,3 +37,26 @@ def accept_invitation(
     if not ok:
         raise HTTPException(status_code=400, detail="Lời mời không hợp lệ hoặc đã được sử dụng.")
     return Message(message="Tham gia nhóm thành công!")
+
+@router.delete("/{invitation_id}", response_model=Message)
+def cancel_invitation(
+    invitation_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Hủy lời mời (chỉ người tạo mới có thể hủy)
+    """
+    invitation = db.query(Invitation).filter(Invitation.id == invitation_id).first()
+    if not invitation:
+        raise HTTPException(status_code=404, detail="Lời mời không tồn tại.")
+    
+    if invitation.invited_by != current_user.id:
+        raise HTTPException(status_code=403, detail="Bạn không có quyền hủy lời mời này.")
+    
+    if invitation.is_accepted:
+        raise HTTPException(status_code=400, detail="Không thể hủy lời mời đã được chấp nhận.")
+    
+    db.delete(invitation)
+    db.commit()
+    return Message(message="Hủy lời mời thành công!")

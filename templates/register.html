@@ -281,8 +281,20 @@ document.getElementById('registerForm').addEventListener('submit', async functio
         return;
     }
     
+    // Prevent duplicate submissions
+    const submitBtn = this.querySelector('button[type="submit"]');
+    if (submitBtn.disabled) {
+        console.log('🚫 Duplicate submission prevented');
+        return;
+    }
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang xử lý...';
+    
     const formData = new FormData(this);
     const data = Object.fromEntries(formData);
+    
+    console.log('📝 Registering with email:', data.email);
     
     try {
         const response = await fetch('/api/v1/auth/register', {
@@ -302,9 +314,15 @@ document.getElementById('registerForm').addEventListener('submit', async functio
             showAlert(result.message, 'success');
         } else {
             showAlert(result.detail || 'Đăng ký thất bại', 'danger');
+            // Re-enable button on error
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-user-plus me-2"></i>Đăng ký';
         }
     } catch (error) {
         showAlert('Có lỗi kết nối. Vui lòng thử lại.', 'danger');
+        // Re-enable button on error
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-user-plus me-2"></i>Đăng ký';
     }
 });
 

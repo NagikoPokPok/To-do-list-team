@@ -8,6 +8,7 @@ from .user import User
 from .task import Task, TaskStatus, TaskPriority
 from .team import Team, TeamMember
 from .notification import Notification
+from .invitation import Invitation
 
 # Xuất tất cả models để sử dụng trong ứng dụng
 __all__ = [
@@ -18,5 +19,6 @@ __all__ = [
     "TaskPriority",
     "Team", 
     "TeamMember",
-    "Notification"
+    "Notification",
+    "Invitation"
 ]

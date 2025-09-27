@@ -7,7 +7,7 @@ from ..models.invitation import Invitation
 from ..schemas import InvitationResponse
 from ..middleware.auth import get_current_user
 
-router = APIRouter(prefix="/invitations", tags=["Invitations"])
+router = APIRouter(prefix="/api/v1/invitations", tags=["Invitations"])
 
 @router.get("/my", response_model=List[InvitationResponse])
 def get_my_invitations(

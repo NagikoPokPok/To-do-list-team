@@ -104,41 +104,7 @@ class TodoApp {
         }
     }
     
-    async register(userData) {
-        try {
-            this.showLoading();
-            
-            const response = await fetch(`${this.baseURL}/auth/register`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(userData)
-            });
-            
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.detail || 'Đăng ký thất bại');
-            }
-            
-            this.showToast('Đăng ký thành công! Vui lòng đăng nhập.', 'success');
-            
-            // Redirect về login page
-            setTimeout(() => {
-                window.location.href = '/login';
-            }, 2000);
-            
-            return { success: true };
-            
-        } catch (error) {
-            console.error('Register error:', error);
-            this.showToast(error.message, 'error');
-            return { success: false, error: error.message };
-        } finally {
-            this.hideLoading();
-        }
-    }
+    // Removed register method - registration handled by register.html inline JS
     
     async getCurrentUser() {
         try {
@@ -560,10 +526,8 @@ class TodoApp {
             if (e.target.id === 'loginForm') {
                 e.preventDefault();
                 this.handleLoginForm(e.target);
-            } else if (e.target.id === 'registerForm') {
-                e.preventDefault();
-                this.handleRegisterForm(e.target);
             }
+            // Removed registerForm handler - handled by register.html inline JS
         });
     }
     
@@ -577,24 +541,7 @@ class TodoApp {
         this.login(email, password, totpCode, emailOtp);
     }
     
-    handleRegisterForm(form) {
-        const formData = new FormData(form);
-        const userData = {
-            email: formData.get('email'),
-            password: formData.get('password'),
-            full_name: formData.get('full_name'),
-            phone_number: formData.get('phone_number')
-        };
-        
-        // Kiểm tra password confirmation
-        const confirmPassword = formData.get('confirm_password');
-        if (userData.password !== confirmPassword) {
-            this.showToast('Mật khẩu xác nhận không khớp', 'error');
-            return;
-        }
-        
-        this.register(userData);
-    }
+    // Removed handleRegisterForm - registration handled by register.html inline JS
 }
 
 // Notification Bell logic

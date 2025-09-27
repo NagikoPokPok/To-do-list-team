@@ -732,6 +732,9 @@ async function saveTask() {
         }
         
         bootstrap.Modal.getInstance(document.getElementById('taskModal')).hide();
+        // Đóng modal hoàn toàn
+        document.body.classList.remove('modal-open');
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
         await loadTasks();
         
     } catch (error) {
