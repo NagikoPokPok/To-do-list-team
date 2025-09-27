@@ -5,17 +5,18 @@ CRUD operations cho teams và team members với phân quyền
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func
 from typing import List, Optional
 
 from ..database import get_db
 from ..models.user import User
 from ..models.team import Team, TeamMember
 from ..schemas import (
-    TeamCreate, TeamUpdate, TeamResponse, UserResponse, Message
+    TeamCreate, TeamUpdate, TeamResponse, UserResponse, Message, TeamJoinRequest
 )
-from ..middleware.auth import get_current_user, get_current_team_manager
+from ..middleware.auth import get_current_user
 
-router = APIRouter(prefix="/teams", tags=["Teams"])
+router = APIRouter(prefix="/api/v1/teams", tags=["Teams"])
 
 
 @router.get("/", response_model=List[TeamResponse])
@@ -39,29 +40,77 @@ async def get_teams(
     Returns:
         List[TeamResponse]: Danh sách teams
     """
-    if current_user.is_team_manager():
-        # Team manager xem tất cả teams họ quản lý
-        teams = db.query(Team).filter(
-            Team.manager_id == current_user.id,
-            Team.is_active == True
-        ).offset(skip).limit(limit).all()
-    else:
-        # Team member xem teams họ tham gia
-        team_ids = db.query(TeamMember.team_id).filter(
-            TeamMember.user_id == current_user.id,
-            TeamMember.is_active == True
-        ).subquery()
-        
-        teams = db.query(Team).filter(
-            Team.id.in_(team_ids),
-            Team.is_active == True
-        ).offset(skip).limit(limit).all()
+    # Lấy teams mà user là manager
+    managed_teams = db.query(Team).filter(
+        Team.manager_id == current_user.id,
+        Team.is_active == True
+    )
+    
+    # Lấy teams mà user là member
+    member_team_ids = db.query(TeamMember.team_id).filter(
+        TeamMember.user_id == current_user.id,
+        TeamMember.is_active == True
+    ).subquery()
+    
+    joined_teams = db.query(Team).filter(
+        Team.id.in_(member_team_ids),
+        Team.is_active == True
+    )
+    
+    # Kết hợp cả hai danh sách
+    teams = managed_teams.union(joined_teams).offset(skip).limit(limit).all()
     
     # Thêm member_count cho mỗi team
     for team in teams:
         team.member_count = team.get_member_count()
     
     return teams
+
+@router.post("/{team_id}/leave", response_model=Message)
+async def leave_team(
+    team_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Thành viên tự rời khỏi team (không cho phép manager duy nhất rời team)
+    Args:
+        team_id: ID của team
+        current_user: User hiện tại
+        db: Database session
+    Returns:
+        Message: Thông báo thành công
+    Raises:
+        HTTPException: Nếu không phải thành viên hoặc là manager duy nhất
+    """
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy team"
+        )
+    # Kiểm tra user có phải thành viên không
+    member = db.query(TeamMember).filter(
+        TeamMember.team_id == team_id,
+        TeamMember.user_id == current_user.id,
+        TeamMember.is_active == True
+    ).first()
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bạn không phải là thành viên của team này"
+        )
+    # Không cho phép manager duy nhất rời team
+    if team.manager_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Manager không thể tự rời team. Vui lòng chuyển quyền quản lý trước."
+        )
+    # Soft delete thành viên
+    member.is_active = False
+    member.left_at = func.now()
+    db.commit()
+    return Message(message="Bạn đã rời khỏi team thành công")
 
 
 @router.get("/{team_id}", response_model=TeamResponse)
@@ -95,7 +144,8 @@ async def get_team(
     # Kiểm tra quyền xem team
     can_view = False
     
-    if current_user.is_team_manager() and team.manager_id == current_user.id:
+    # User có thể xem nếu là manager của team
+    if team.manager_id == current_user.id:
         can_view = True
     else:
         # Kiểm tra user có phải member của team không
@@ -120,22 +170,23 @@ async def get_team(
 @router.post("/", response_model=TeamResponse, status_code=status.HTTP_201_CREATED)
 async def create_team(
     team_data: TeamCreate,
-    current_user: User = Depends(get_current_team_manager),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     Tạo team mới
-    Chỉ team manager mới có thể tạo team
+    Mọi user đều có thể tạo team
     
     Args:
         team_data: Dữ liệu team mới
-        current_user: User hiện tại (phải là team manager)
+        current_user: User hiện tại
         db: Database session
         
     Returns:
         TeamResponse: Team vừa tạo
     """
-    # Tạo team mới
+
+    # Tạo team mới với invite code
     new_team = Team(
         name=team_data.name,
         description=team_data.description,
@@ -143,12 +194,25 @@ async def create_team(
         manager_id=current_user.id,
         is_active=True
     )
-    
+
+    # Tạo invite code
+    new_team.generate_invite_code()
+
     db.add(new_team)
     db.commit()
     db.refresh(new_team)
-    
-    new_team.member_count = 0
+
+    # Thêm manager vào TeamMember
+    manager_member = TeamMember(
+        team_id=new_team.id,
+        user_id=current_user.id,
+        role="manager",
+        is_active=True
+    )
+    db.add(manager_member)
+    db.commit()
+
+    new_team.member_count = 1
     return new_team
 
 
@@ -247,64 +311,49 @@ async def delete_team(
     return Message(message="Team đã được xóa thành công")
 
 
-@router.get("/{team_id}/members", response_model=List[UserResponse])
+from ..schemas import TeamMemberResponse
+
+@router.get("/{team_id}/members", response_model=List[TeamMemberResponse])
 async def get_team_members(
     team_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Lấy danh sách members của team
-    
-    Args:
-        team_id: ID của team
-        current_user: User hiện tại
-        db: Database session
-        
-    Returns:
-        List[UserResponse]: Danh sách members
-        
-    Raises:
-        HTTPException: Nếu team không tồn tại hoặc không có quyền xem
+    Lấy danh sách members của team, trả về cả role
     """
     team = db.query(Team).filter(Team.id == team_id).first()
-    
     if not team:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Không tìm thấy team"
         )
-    
-    # Kiểm tra quyền xem members
-    can_view = False
-    
-    if current_user.is_team_manager() and team.manager_id == current_user.id:
-        can_view = True
-    else:
-        # Kiểm tra user có phải member của team không
-        is_member = db.query(TeamMember).filter(
-            TeamMember.team_id == team_id,
-            TeamMember.user_id == current_user.id,
-            TeamMember.is_active == True
-        ).first()
-        if is_member:
-            can_view = True
-    
-    if not can_view:
+    # Kiểm tra quyền xem team: chỉ cần là thành viên đang hoạt động hoặc là manager_id
+    is_member = db.query(TeamMember).filter(
+        TeamMember.team_id == team_id,
+        TeamMember.user_id == current_user.id,
+        TeamMember.is_active == True
+    ).first()
+    if not (team.manager_id == current_user.id or is_member):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Bạn không có quyền xem danh sách members của team này"
+            detail="Bạn không có quyền xem team này"
         )
-    
-    # Lấy danh sách members
-    members = db.query(User).join(
+    team.member_count = team.get_member_count()
+
+    members = db.query(User, TeamMember).join(
         TeamMember, User.id == TeamMember.user_id
     ).filter(
         TeamMember.team_id == team_id,
         TeamMember.is_active == True
     ).all()
-    
-    return members
+    result = []
+    for user, member in members:
+        user_dict = user.__dict__.copy()
+        user_dict['role'] = member.role
+        user_dict['joined_at'] = member.joined_at
+        result.append(TeamMemberResponse(**user_dict))
+    return result
 
 
 @router.post("/{team_id}/members/{user_id}", response_model=Message)
@@ -456,7 +505,204 @@ async def remove_team_member(
     
     # Xóa member (soft delete)
     member.is_active = False
-    member.left_at = db.func.now()
+    # member.left_at = db.func.now()
+    member.left_at = func.now()
     db.commit()
     
     return Message(message="Đã xóa member khỏi team thành công")
+
+
+@router.post("/join", response_model=Message)
+async def join_team_by_invite(
+    join_request: TeamJoinRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Tham gia team bằng invite code
+    
+    Args:
+        join_request: Request chứa invite code
+        current_user: User hiện tại
+        db: Database session
+        
+    Returns:
+        Message: Thông báo thành công
+    """
+    # Tìm team bằng invite code
+    team = db.query(Team).filter(
+        Team.invite_code == join_request.invite_code,
+        Team.is_active == True,
+        Team.invite_link_active == True
+    ).first()
+    
+    if not team:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Liên kết tham gia không hợp lệ hoặc đã hết hạn"
+        )
+    
+    # Kiểm tra user đã là member chưa
+    existing_member = db.query(TeamMember).filter(
+        TeamMember.team_id == team.id,
+        TeamMember.user_id == current_user.id,
+        TeamMember.is_active == True
+    ).first()
+    
+    if existing_member:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Bạn đã là thành viên của team này"
+        )
+    
+    # Kiểm tra số lượng member
+    if not team.can_add_member():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Team này đã đạt số lượng thành viên tối đa"
+        )
+    
+    # Thêm member mới
+    new_member = TeamMember(
+        team_id=team.id,
+        user_id=current_user.id,
+        role="member",
+        is_active=True
+    )
+    
+    db.add(new_member)
+    db.commit()
+    
+    return Message(message=f"Đã tham gia team '{team.name}' thành công")
+
+
+@router.get("/{team_id}/invite-link")
+async def get_team_invite_link(
+    team_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Lấy link mời tham gia team
+    Chỉ manager của team mới có thể lấy link
+    
+    Args:
+        team_id: ID của team
+        current_user: User hiện tại
+        db: Database session
+        
+    Returns:
+        Dict: Invite link và code
+    """
+    team = db.query(Team).filter(Team.id == team_id).first()
+    
+    if not team:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy team"
+        )
+    
+    # Chỉ manager mới có thể lấy invite link
+    if team.manager_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ manager của team mới có thể lấy link mời"
+        )
+    
+    # Tạo invite code nếu chưa có
+    if not team.invite_code:
+        team.generate_invite_code()
+        db.commit()
+    
+    return {
+        "invite_code": team.invite_code,
+        "invite_link": team.get_invite_link(),
+        "is_active": team.invite_link_active
+    }
+
+
+@router.put("/{team_id}/invite-link/toggle")
+async def toggle_invite_link(
+    team_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Bật/tắt invite link
+    
+    Args:
+        team_id: ID của team
+        current_user: User hiện tại
+        db: Database session
+        
+    Returns:
+        Dict: Trạng thái mới của invite link
+    """
+    team = db.query(Team).filter(Team.id == team_id).first()
+    
+    if not team:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy team"
+        )
+    
+    # Chỉ manager mới có thể toggle invite link
+    if team.manager_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ manager của team mới có thể thay đổi trạng thái invite link"
+        )
+    
+    # Toggle trạng thái
+    team.invite_link_active = not team.invite_link_active
+    db.commit()
+    
+    status_text = "kích hoạt" if team.invite_link_active else "vô hiệu hóa"
+    return {
+        "message": f"Đã {status_text} invite link",
+        "is_active": team.invite_link_active
+    }
+
+
+@router.put("/{team_id}/invite-link/regenerate")
+async def regenerate_invite_code(
+    team_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Tạo lại invite code mới
+    
+    Args:
+        team_id: ID của team
+        current_user: User hiện tại
+        db: Database session
+        
+    Returns:
+        Dict: Invite code và link mới
+    """
+    team = db.query(Team).filter(Team.id == team_id).first()
+    
+    if not team:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy team"
+        )
+    
+    # Chỉ manager mới có thể regenerate invite code
+    if team.manager_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ manager của team mới có thể tạo lại invite code"
+        )
+    
+    # Tạo invite code mới
+    team.generate_invite_code()
+    db.commit()
+    
+    return {
+        "message": "Đã tạo lại invite code mới",
+        "invite_code": team.invite_code,
+        "invite_link": team.get_invite_link(),
+        "is_active": team.invite_link_active
+    }

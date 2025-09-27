@@ -17,10 +17,10 @@ from ..schemas import (
     TaskCreate, TaskUpdate, TaskResponse, Message,
     TaskStatusEnum, TaskPriorityEnum
 )
-from ..middleware.auth import get_current_user, get_current_team_manager
+from ..middleware.auth import get_current_user
 from ..services.email_service import email_service
 
-router = APIRouter(prefix="/tasks", tags=["Tasks"])
+router = APIRouter(prefix="/api/v1/tasks", tags=["Tasks"])
 
 
 @router.get("/", response_model=List[TaskResponse])
@@ -168,6 +168,19 @@ async def create_task(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Không tìm thấy người dùng được gán task"
             )
+        
+        # Nếu có team_id, kiểm tra assignee có phải thành viên của team không
+        if task_data.team_id:
+            team_member = db.query(TeamMember).filter(
+                TeamMember.team_id == task_data.team_id,
+                TeamMember.user_id == task_data.assignee_id,
+                TeamMember.is_active == True
+            ).first()
+            if not team_member:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Người dùng được gán phải là thành viên của nhóm"
+                )
     
     # Kiểm tra team có tồn tại không
     if task_data.team_id:
@@ -219,7 +232,7 @@ async def create_task(
                 assignee_email=assignee.email,
                 assignee_name=assignee.full_name or assignee.username,
                 task_title=new_task.title,
-                assigner_name=current_user.full_name or current_user.username,
+                assigner_name=current_user.full_name or current_user.email.split('@')[0],
                 due_date=due_date_str
             )
     
@@ -265,8 +278,10 @@ async def update_task(
     
     # Cập nhật các trường
     update_data = task_data.model_dump(exclude_unset=True)
+    print(f"Updating task {task_id} with data: {update_data}")
     
     for field, value in update_data.items():
+        print(f"Setting {field} = {value}")
         if field == "status" and value:
             setattr(task, field, TaskStatus(value))
             # Cập nhật completed_at nếu status là completed
@@ -282,6 +297,21 @@ async def update_task(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Không tìm thấy người dùng được gán task"
                 )
+            
+            # Nếu task có team_id, kiểm tra assignee có phải thành viên của team không
+            if task.team_id:
+                from ..models.team import TeamMember
+                team_member = db.query(TeamMember).filter(
+                    TeamMember.team_id == task.team_id,
+                    TeamMember.user_id == value,
+                    TeamMember.is_active == True
+                ).first()
+                if not team_member:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Người dùng được gán phải là thành viên của nhóm"
+                    )
+            
             setattr(task, field, value)
         else:
             if value is not None:
@@ -290,6 +320,7 @@ async def update_task(
     task.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(task)
+    print(f"Task {task_id} updated successfully. assignee_id = {task.assignee_id}")
     
     return task
 

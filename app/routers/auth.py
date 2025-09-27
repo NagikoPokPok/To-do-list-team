@@ -1,150 +1,169 @@
 """
-Authentication Router - API endpoints cho xác thực người dùng
-Bao gồm đăng ký, đăng nhập, 2FA và quản lý token
-"""
+Authentifrom ..schemas import (
+    UserCreate, UserResponse, UserUpdate, UserLogin, Token, Message,
+    Enable2FA, Verify2FA, EmailOTPRequest, EmailOTPVerify, OTPVerify, OTPRequest,
+    PasswordReset, PasswordResetConfirm
+)n Router (Consolidated)
+===================================
 
-from fastapi import APIRouter, Depends, HTTPException, status
+Gộp logic từ router cũ, chuẩn hóa prefix /api/v1/auth và đặt tên endpoint
+phù hợp với frontend hiện tại (register, verify-otp, resend-otp, login, me, ...)
+"""
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
-import json
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from ..database import get_db
 from ..models.user import User
 from ..schemas import (
-    UserCreate, UserResponse, UserLogin, Token, Message,
-    Enable2FA, Verify2FA
+    UserCreate, UserResponse, UserUpdate, UserLogin, Token, Message,
+    Enable2FA, Verify2FA, EmailOTPRequest, EmailOTPVerify, OTPVerify, OTPRequest,
+    PasswordReset, PasswordResetConfirm
 )
-from ..utils.auth import (
-    verify_password, get_password_hash, create_access_token,
-    generate_totp_secret, generate_totp_qr_code, verify_totp_code,
-    generate_backup_codes, generate_email_otp, is_otp_expired
-)
-from ..services.email_service import email_service
+from ..controllers.auth_controller import AuthController
 from ..middleware.auth import get_current_user
-from ..config import settings
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
+
+auth_controller = AuthController()
 
 
-# ------------------ REGISTER ------------------
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+# ---- Registration & Email Verification ----
+@router.post("/register", response_model=Message, status_code=status.HTTP_201_CREATED)
 async def register(user_data: UserCreate, db: Session = Depends(get_db)):
-    # Kiểm tra email đã tồn tại
-    if db.query(User).filter(User.email == user_data.email).first():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email này đã được sử dụng"
-        )
+    result = await auth_controller.register_user(user_data, db)
+    return Message(message=result["message"])
 
-    # Kiểm tra username đã tồn tại
-    if db.query(User).filter(User.username == user_data.username).first():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username này đã được sử dụng"
-        )
 
-    # Tạo user mới
-    hashed_password = get_password_hash(user_data.password)
-    new_user = User(
-        email=user_data.email,
-        username=user_data.username,
-        hashed_password=hashed_password,
-        full_name=user_data.full_name,
-        phone_number=user_data.phone_number,
-        role=user_data.role.value,
-        is_active=True,
+@router.post("/verify-email", response_model=Message)
+async def verify_email(verify_data: EmailOTPVerify, db: Session = Depends(get_db)):
+    result = await auth_controller.verify_email(verify_data, db)
+    return Message(message=result["message"])
+
+
+# Alias cho frontend đang gọi /verify-otp
+@router.post("/verify-otp", response_model=Message)
+async def verify_email_alias(otp_data: OTPVerify, db: Session = Depends(get_db)):
+    verify_payload = EmailOTPVerify(email=otp_data.email, otp_code=otp_data.otp_code)
+    result = await auth_controller.verify_email(verify_payload, db)
+    return Message(message=result["message"])
+
+
+@router.post("/resend-registration-otp", response_model=Message)
+async def resend_registration_otp(email_req: EmailOTPRequest, db: Session = Depends(get_db)):
+    result = await auth_controller.resend_registration_otp(email_req, db)
+    return Message(message=result["message"])
+
+
+# Alias cho /resend-otp nếu FE dùng
+@router.post("/resend-otp", response_model=Message)
+async def resend_registration_otp_alias(otp_req: OTPRequest, db: Session = Depends(get_db)):
+    email_req = EmailOTPRequest(email=otp_req.email)
+    result = await auth_controller.resend_registration_otp(email_req, db)
+    return Message(message=result["message"])
+
+
+# ---- Login flows ----
+@router.post("/login", response_model=Token)
+async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
+    result = await auth_controller.login_user(user_credentials, db)
+    return Token(
+        access_token=result["access_token"],
+        token_type=result["token_type"],
+        expires_in=result["expires_in"]
     )
 
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
 
-    # Gửi email chào mừng
-    await email_service.send_welcome_email(new_user.email, new_user.username)
+# Optional: OTP login (giữ lại nếu cần về sau)
+@router.post("/login-otp", response_model=Token)
+async def login_with_otp(otp_data: EmailOTPVerify, db: Session = Depends(get_db)):
+    result = await auth_controller.login_with_otp(otp_data, db)
+    return Token(
+        access_token=result["access_token"],
+        token_type=result["token_type"],
+        expires_in=result["expires_in"]
+    )
 
-    return new_user
+
+# ---- 2FA ----
+@router.post("/enable-2fa", response_model=Dict[str, Any])
+async def enable_2fa(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return await auth_controller.enable_2fa(current_user, db)
 
 
-# ------------------ LOGIN ------------------
-@router.post("/login")
-async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
+@router.post("/verify-2fa", response_model=Message)
+async def verify_and_enable_2fa(verify_data: Verify2FA, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    result = await auth_controller.verify_and_enable_2fa(verify_data, current_user, db)
+    return Message(message=result["message"])
+
+
+@router.post("/disable-2fa", response_model=Message)
+async def disable_2fa(verify_data: Verify2FA, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    result = await auth_controller.disable_2fa(verify_data, current_user, db)
+    return Message(message=result["message"])
+
+
+# ---- Profile ----
+@router.get("/me", response_model=UserResponse)
+async def get_me(current_user: User = Depends(get_current_user)):
+    return auth_controller.get_user_profile(current_user)
+
+
+@router.put("/me", response_model=UserResponse)
+async def update_me(
+    update_data: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
-    Đăng nhập với email/password và 2FA (nếu bật)
+    Cập nhật thông tin profile của user hiện tại
+    
+    Args:
+        update_data: Dữ liệu cập nhật
+        current_user: User hiện tại
+        db: Database session
+        
+    Returns:
+        UserResponse: Thông tin user đã cập nhật
     """
+    return auth_controller.update_user_profile(current_user, update_data, db)
 
-    # Tìm user theo email
-    user = db.query(User).filter(User.email == user_credentials.email).first()
 
-    if not user or not verify_password(user_credentials.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email hoặc mật khẩu không chính xác"
-        )
-
-    if not user.is_active:
+@router.get("/users", response_model=List[UserResponse])
+async def get_users(
+    skip: int = 0,
+    limit: int = 100,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Lấy danh sách users (để assign tasks)
+    Chỉ team manager mới có thể xem danh sách users
+    """
+    if not current_user.is_team_manager():
+        from fastapi import HTTPException
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Tài khoản đã bị vô hiệu hóa"
+            detail="Chỉ team manager mới có thể xem danh sách users"
         )
+    
+    users = db.query(User).offset(skip).limit(limit).all()
+    return users
 
-    # Nếu user đã bật 2FA
-    if user.is_2fa_enabled:
-        # Nếu chưa nhập mã 2FA → gửi OTP và báo frontend
-        if not user_credentials.totp_code and not user_credentials.email_otp:
-            otp = generate_email_otp()
-            user.email_otp = otp
-            user.email_otp_expiry = datetime.utcnow() + timedelta(minutes=5)
-            db.commit()
 
-            await email_service.send_otp_email(user.email, otp, user.username)
-
-            return {
-                "access_token": None,
-                "token_type": None,
-                "expires_in": 0,
-                "requires_2fa": True,
-                "message": "OTP_SENT"
-            }
-
-        # Xác thực bằng TOTP app
-        if user_credentials.totp_code:
-            if not user.totp_secret or not verify_totp_code(user.totp_secret, user_credentials.totp_code):
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Mã xác thực không hợp lệ"
-                )
-
-        # Xác thực bằng OTP email
-        elif user_credentials.email_otp:
-            if (not user.email_otp or
-                user.email_otp != user_credentials.email_otp or
-                is_otp_expired(user.email_otp_expiry)):
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Mã OTP không hợp lệ hoặc đã hết hạn"
-                )
-
-            # Xóa OTP sau khi dùng
-            user.email_otp = None
-            user.email_otp_expiry = None
-            db.commit()
-
-    # Cập nhật last_login
-    user.last_login = datetime.utcnow()
-    db.commit()
-
-    # Tạo access token
-    access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
-    access_token = create_access_token(
-        data={"sub": str(user.id), "email": user.email},
-        expires_delta=access_token_expires
-    )
-
+# ---- Health / Misc ----
+@router.get("/health")
+async def auth_health_check():
     return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "expires_in": settings.access_token_expire_minutes * 60,
-        "requires_2fa": False,
-        "message": "LOGIN_SUCCESS"
+        "status": "healthy",
+        "service": "authentication",
+        "prefix": "/api/v1/auth",
+        "features": [
+            "user_registration",
+            "email_verification",
+            "password_login",
+            "otp_login",
+            "2fa_totp",
+            "jwt_tokens"
+        ]
     }

@@ -260,21 +260,27 @@
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="assigned_to" class="form-label">Giao cho</label>
-                                <select class="form-select" id="assigned_to" name="assigned_to">
-                                    <option value="">Chưa giao</option>
+                                <select class="form-select" id="assigned_to" name="assigned_to" disabled>
+                                    <option value="">Chọn nhóm trước để giao cho thành viên</option>
                                 </select>
                             </div>
                         </div>
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="due_date" class="form-label">Ngày bắt đầu</label>
+                                <input type="date" class="form-control" id="start_date" name="start_date">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="due_date" class="form-label">Hạn hoàn thành</label>
                                 <input type="datetime-local" class="form-control" id="due_date" name="due_date">
                             </div>
                         </div>
-                        <div class="col-md-6 d-flex align-items-end">
+                        <div class="col-md-4 d-flex align-items-end">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="is_recurring" name="is_recurring">
                                 <label class="form-check-label" for="is_recurring">
@@ -362,6 +368,7 @@ async function loadInitialData() {
         // Load team members for assignment
         if (allTeams.length > 0) {
             await loadTeamMembers();
+            updateAssigneeFilter(); // Initialize assignee filter
         }
         
     } catch (error) {
@@ -375,26 +382,109 @@ async function loadTeamMembers() {
     
     // Clear existing options except default ones
     assigneeFilter.innerHTML = '<option value="">Tất cả người thực hiện</option><option value="me">Của tôi</option>';
-    assignedToSelect.innerHTML = '<option value="">Chưa giao</option>';
+    assignedToSelect.innerHTML = '<option value="">Chọn nhóm trước để giao cho thành viên</option>';
+    assignedToSelect.disabled = true;
     
     try {
+        // Skip adding current user to allUsers to avoid duplication with "Của tôi"
+        // Current user is already represented by "Của tôi" option
+        
+        // Load all users for assignment (only if team manager)
+        if (todoApp.user && todoApp.user.role === 'team_manager') {
+            const users = await todoApp.getUsers();
+            users.forEach(user => {
+                // Avoid adding current user again
+                if (!allUsers.find(u => u.id == user.id)) {
+                    allUsers.push(user);
+                }
+            });
+        }
+        
+        // Also load team members for reference
         for (const team of allTeams) {
             const members = await todoApp.getTeamMembers(team.id);
             members.forEach(member => {
-                const option1 = new Option(`${member.full_name || member.username} (${team.name})`, member.id);
-                const option2 = new Option(`${member.full_name || member.username}`, member.id);
-                assigneeFilter.appendChild(option1);
-                assignedToSelect.appendChild(option2);
+                // Avoid duplicates
+                if (!allUsers || !allUsers.find(u => u.id == member.id)) {
+                    allUsers.push(member);
+                }
             });
         }
+        
+        // Update assignee filter based on current team selection
+        updateAssigneeFilter();
+    } catch (error) {
+        console.error('Load users error:', error);
+        // Fallback: allow current user to assign to themselves
+        if (todoApp.user && !allUsers.find(u => u.id == todoApp.user.id)) {
+            allUsers.push(todoApp.user);
+        }
+        updateAssigneeFilter();
+    }
+}
+
+async function updateAssigneeFilter() {
+    const assigneeFilter = document.getElementById('assigneeFilter');
+    const teamFilterValue = document.getElementById('teamFilter').value;
+    
+    // Clear existing options except default ones
+    assigneeFilter.innerHTML = '<option value="">Tất cả người thực hiện</option>';
+    
+    // Always add "Của tôi" option
+    const meOption = new Option('Của tôi', 'me');
+    assigneeFilter.appendChild(meOption);
+    
+    // If a team is selected, add team members to filter (exclude current user to avoid duplication)
+    if (teamFilterValue) {
+        try {
+            const members = await todoApp.getTeamMembers(teamFilterValue);
+            const currentUser = todoApp.user;
+            
+            members.forEach(member => {
+                // Skip current user to avoid showing both "Của tôi" and user's name
+                if (currentUser && member.id !== currentUser.id) {
+                    const displayName = member.full_name || member.email.split('@')[0];
+                    const option = new Option(displayName, member.id);
+                    assigneeFilter.appendChild(option);
+                }
+            });
+        } catch (error) {
+            console.error('Load team members for filter error:', error);
+        }
+    }
+    // If no team selected, only "Của tôi" is available
+}
+
+async function loadTeamMembersForAssignment(teamId) {
+    const assignedToSelect = document.getElementById('assigned_to');
+    
+    if (!teamId) {
+        assignedToSelect.innerHTML = '<option value="">Chọn nhóm trước để giao cho thành viên</option>';
+        assignedToSelect.disabled = true;
+        return;
+    }
+    
+    try {
+        assignedToSelect.innerHTML = '<option value="">Chưa giao cho ai</option>';
+        assignedToSelect.disabled = false;
+        
+        const members = await todoApp.getTeamMembers(teamId);
+        members.forEach(member => {
+            const displayName = member.full_name || member.username;
+            const option = new Option(displayName, member.id);
+            assignedToSelect.appendChild(option);
+        });
     } catch (error) {
         console.error('Load team members error:', error);
+        assignedToSelect.innerHTML = '<option value="">Lỗi tải thành viên nhóm</option>';
+        assignedToSelect.disabled = true;
     }
 }
 
 async function loadTasks() {
     try {
         allTasks = await todoApp.getTasks();
+        await loadTeamMembers(); // Ensure users are loaded
         displayTasks();
         updateTaskCounts();
     } catch (error) {
@@ -410,13 +500,14 @@ async function loadTasks() {
 }
 
 function displayTasks() {
-    const filteredTasks = filterTasks();
     const currentView = document.querySelector('input[name="viewMode"]:checked').id;
     
     if (currentView === 'listView') {
+        const filteredTasks = filterTasks();
         displayListView(filteredTasks);
     } else {
-        displayKanbanView(filteredTasks);
+        // Kanban view shows all tasks grouped by status, regardless of filters
+        displayKanbanView(allTasks);
     }
 }
 
@@ -442,9 +533,9 @@ function filterTasks() {
     }
     
     if (assigneeFilter === 'me') {
-        filtered = filtered.filter(task => task.assigned_to == todoApp.user.id);
+        filtered = filtered.filter(task => task.assignee_id == todoApp.user.id);
     } else if (assigneeFilter) {
-        filtered = filtered.filter(task => task.assigned_to == assigneeFilter);
+        filtered = filtered.filter(task => task.assignee_id == assigneeFilter);
     }
     
     if (searchQuery) {
@@ -478,12 +569,22 @@ function displayListView(tasks) {
 }
 
 function displayKanbanView(tasks) {
-    const statuses = ['pending', 'in_progress', 'completed', 'cancelled'];
+    const statusMap = {
+        'pending': 'pendingTasks',
+        'in_progress': 'inProgressTasks',
+        'completed': 'completedTasks',
+        'cancelled': 'cancelledTasks'
+    };
     
-    statuses.forEach(status => {
+    Object.keys(statusMap).forEach(status => {
         const statusTasks = tasks.filter(task => task.status === status);
-        const container = document.getElementById(`${status.replace('_', '')}Tasks`);
-        container.innerHTML = statusTasks.map(task => createTaskCard(task, true)).join('');
+        const containerId = statusMap[status];
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = statusTasks.map(task => createTaskCard(task, true)).join('');
+        } else {
+            console.error(`Container ${containerId} not found`);
+        }
     });
 }
 
@@ -492,8 +593,8 @@ function createTaskCard(task, isDraggable = false) {
     const statusClass = `task-status-${task.status}`;
     const overdueBadge = isOverdue(task) ? '<span class="badge bg-danger ms-2">Quá hạn</span>' : '';
     
-    const assigneeName = task.assigned_to ? 
-        (allUsers.find(u => u.id == task.assigned_to)?.full_name || 'Unknown') : 
+    const assigneeName = task.assignee_id ? 
+        (allUsers && allUsers.find(u => u.id == task.assignee_id)?.full_name || 'Unknown') : 
         'Chưa giao';
     
     const teamName = task.team_id ? 
@@ -582,8 +683,16 @@ function populateTaskForm(task) {
     document.getElementById('priority').value = task.priority;
     document.getElementById('status').value = task.status;
     document.getElementById('team_id').value = task.team_id || '';
-    document.getElementById('assigned_to').value = task.assigned_to || '';
     document.getElementById('is_recurring').checked = task.is_recurring;
+    
+    // Load team members if team is selected, then set assignee value
+    if (task.team_id) {
+        loadTeamMembersForAssignment(task.team_id).then(() => {
+            document.getElementById('assigned_to').value = task.assignee_id || '';
+        });
+    } else {
+        document.getElementById('assigned_to').value = task.assignee_id || '';
+    }
     
     if (task.due_date) {
         const dueDate = new Date(task.due_date);
@@ -595,16 +704,21 @@ async function saveTask() {
     const form = document.getElementById('taskForm');
     const formData = new FormData(form);
     
+    const teamId = formData.get('team_id');
+    const assigneeId = formData.get('assigned_to');
+    
     const taskData = {
         title: formData.get('title'),
         description: formData.get('description'),
         priority: formData.get('priority'),
         status: formData.get('status'),
-        team_id: formData.get('team_id') || null,
-        assigned_to: formData.get('assigned_to') || null,
+        team_id: (teamId && teamId !== '') ? parseInt(teamId) : null,
+        assignee_id: (assigneeId && assigneeId !== '') ? parseInt(assigneeId) : null,
         due_date: formData.get('due_date') || null,
         is_recurring: formData.get('is_recurring') === 'on'
     };
+    
+    console.log('Sending task data:', taskData);
     
     try {
         const taskId = formData.get('task_id');
@@ -646,8 +760,8 @@ async function viewTaskDetail(taskId) {
     if (!task) return;
     
     currentTask = task;
-    const assigneeName = task.assigned_to ? 
-        (allUsers.find(u => u.id == task.assigned_to)?.full_name || 'Unknown') : 
+    const assigneeName = task.assignee_id ? 
+        (allUsers && allUsers.find(u => u.id == task.assignee_id)?.full_name || 'Unknown') : 
         'Chưa giao';
     
     const teamName = task.team_id ? 
@@ -716,9 +830,10 @@ async function dropTask(ev) {
     
     try {
         await todoApp.updateTask(taskId, { status: newStatus });
-        await loadTasks();
+        await loadTasks(); // This will call displayTasks() internally
         todoApp.showToast('Cập nhật trạng thái thành công!', 'success');
     } catch (error) {
+        console.error('Drop task error:', error);
         todoApp.showToast(error.message, 'error');
     }
 }
@@ -744,7 +859,11 @@ function setupEventListeners() {
     });
     
     // Filters
-    ['teamFilter', 'statusFilter', 'priorityFilter', 'assigneeFilter', 'searchInput'].forEach(id => {
+    document.getElementById('teamFilter').addEventListener('change', function() {
+        updateAssigneeFilter();
+        displayTasks();
+    });
+    ['statusFilter', 'priorityFilter', 'assigneeFilter', 'searchInput'].forEach(id => {
         document.getElementById(id).addEventListener('change', displayTasks);
     });
     
@@ -754,6 +873,11 @@ function setupEventListeners() {
     document.getElementById('taskForm').addEventListener('submit', function(e) {
         e.preventDefault();
         saveTask();
+    });
+    
+    // Team selection change
+    document.getElementById('team_id').addEventListener('change', function(e) {
+        loadTeamMembersForAssignment(e.target.value);
     });
     
     // Drag over event cleanup
@@ -773,6 +897,7 @@ function clearFilters() {
     document.getElementById('priorityFilter').value = '';
     document.getElementById('assigneeFilter').value = '';
     document.getElementById('searchInput').value = '';
+    updateAssigneeFilter(); // Reset assignee filter when clearing
     displayTasks();
 }
 

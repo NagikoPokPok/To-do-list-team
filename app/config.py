@@ -11,7 +11,13 @@ class Settings(BaseSettings):
     """Lớp cấu hình chính cho ứng dụng"""
     
     # Cấu hình ứng dụng cơ bản
-    app_name: str = "Todo List Application"
+    app_name: str = "VTeam"
+    app_url: str = "http://localhost:8000"
+    SECRET_KEY: str = "your-super-secret-key-change-this-in-production"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    
+    # Aliases cho tương thích
     secret_key: str = "your-super-secret-key-change-this-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
@@ -19,12 +25,17 @@ class Settings(BaseSettings):
     # Cấu hình cơ sở dữ liệu
     database_url: str = "sqlite:///./todo_app.db"
     
-    # Cấu hình Email
-    smtp_server: str = "smtp.gmail.com"
-    smtp_port: int = 587
-    smtp_username: Optional[str] = None
-    smtp_password: Optional[str] = None
-    email_from: Optional[str] = None
+    # Cấu hình Email từ .env
+    SMTP_SERVER: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    EMAIL_FROM: Optional[str] = None
+    
+    # Aliases cho tương thích với email service
+    SMTP_HOST: str = "smtp.gmail.com"
+    FROM_EMAIL: Optional[str] = None
+    FROM_NAME: str = "Todo List Team"
     
     # Cấu hình 2FA
     totp_secret_key: str = "your-totp-secret-key"

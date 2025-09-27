@@ -10,7 +10,7 @@
 }
 
 .team-card:hover {
-    transform: translateY(-2px);
+    /* transform: translateY(-2px); */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
@@ -75,6 +75,13 @@
     .stat-number {
         font-size: 1.25rem;
     }
+}
+</style>
+<style>
+/* Fix dropdown menu z-index inside team cards */
+.team-card .dropdown-menu {
+    z-index: 2000;
+    position: absolute;
 }
 </style>
 {% endblock %}
@@ -234,6 +241,11 @@
                             <div class="card-body p-0">
                                 <div class="list-group list-group-flush" id="teamMembersContent">
                                     <!-- Members will be loaded here -->
+                                </div>
+                                <div class="d-flex justify-content-end mt-3">
+                                    <button class="btn btn-danger" id="inviteMemberBelowBtn" onclick="openInviteModal()">
+                                        <i class="fas fa-user-plus me-2"></i>Mời thành viên mới
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -400,7 +412,7 @@ function displayTeams() {
 }
 
 function createTeamCard(team) {
-    const isManager = team.created_by == todoApp.user.id;
+    const isManager = team.manager_id == todoApp.user.id;
     const memberCount = team.member_count || 0;
     const maxMembers = team.max_members || 10;
     
@@ -477,6 +489,9 @@ function updateTeamStats() {
     document.getElementById('managingTeamsCount').textContent = managingTeams.length;
     document.getElementById('memberTeamsCount').textContent = memberTeams.length;
     document.getElementById('totalMembersCount').textContent = totalMembers;
+
+    document.body.classList.remove('modal-open');
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
 }
 
 // Team Operations
@@ -564,32 +579,36 @@ async function viewTeamDetail(teamId) {
     try {
         // Load team members
         currentTeamMembers = await todoApp.getTeamMembers(teamId);
-        
-        // Load pending invitations if user is manager
-        if (currentTeam.created_by == todoApp.user.id) {
+
+        // Luôn gán pendingInvitations là mảng rỗng mặc định
+        pendingInvitations = [];
+        // Kiểm tra user và manager_id trước khi so sánh
+        if (!todoApp.user) {
+            console.error('User chưa đăng nhập hoặc chưa load xong!', todoApp.user);
+        } else if (typeof currentTeam.manager_id === 'undefined') {
+            console.error('currentTeam.manager_id bị undefined!', currentTeam);
+        } else if (currentTeam.manager_id == todoApp.user.id) {
             try {
                 pendingInvitations = await todoApp.getPendingInvitations(teamId);
             } catch (error) {
+                // Không throw lỗi, chỉ log
+                console.warn('Không thể lấy lời mời nhóm:', error);
                 pendingInvitations = [];
             }
         }
-        
+
         displayTeamDetail();
         new bootstrap.Modal(document.getElementById('teamDetailModal')).show();
-        
     } catch (error) {
         todoApp.showToast('Không thể tải thông tin nhóm', 'error');
     }
 }
 
 function displayTeamDetail() {
-    const isManager = currentTeam.created_by == todoApp.user.id;
-    
     // Set modal title
     document.getElementById('teamDetailTitle').innerHTML = `
         <i class="fas fa-users me-2"></i>${currentTeam.name}
     `;
-    
     // Team info
     document.getElementById('teamInfoContent').innerHTML = `
         <p><strong>Mô tả:</strong><br>${currentTeam.description || 'Không có mô tả'}</p>
@@ -598,72 +617,39 @@ function displayTeamDetail() {
         <p><strong>Được tạo:</strong> ${formatDate(currentTeam.created_at)}</p>
         <p><strong>Cập nhật:</strong> ${formatDate(currentTeam.updated_at)}</p>
     `;
-    
+    // Xác định bạn có phải là trưởng nhóm không
+    const isCurrentUserManager = currentTeam.manager_id == todoApp.user.id;
     // Members list
     const membersHtml = currentTeamMembers.map(member => {
         const isCurrentUser = member.id == todoApp.user.id;
-        const isTeamManager = member.id == currentTeam.created_by;
-        
+        const isManagerRole = member.role === 'manager';
+        const showRemoveBtn = isCurrentUserManager && !isCurrentUser && !isManagerRole;
         return `
             <div class="list-group-item d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center">
                     <div class="member-avatar">
-                        ${getInitials(member.full_name || member.username)}
+                        ${getInitials(member.full_name || member.email.split('@')[0])}
                     </div>
                     <div>
-                        <h6 class="mb-1">${member.full_name || member.username}</h6>
+                        <h6 class="mb-1">${member.full_name || member.email.split('@')[0]}</h6>
                         <small class="text-muted">${member.email}</small>
                         ${isCurrentUser ? '<span class="badge bg-info ms-2">Bạn</span>' : ''}
                     </div>
                 </div>
                 <div class="d-flex align-items-center">
-                    <span class="badge role-badge bg-${isTeamManager ? 'primary' : 'success'} me-2">
-                        ${isTeamManager ? 'Quản lý' : 'Thành viên'}
+                    <span class="badge role-badge bg-${isManagerRole ? 'primary' : 'success'} me-2">
+                        ${isManagerRole ? 'Trưởng nhóm' : 'Thành viên'}
                     </span>
-                    ${isManager && !isCurrentUser ? `
-                        <div class="member-actions">
-                            <button class="btn btn-sm btn-outline-danger" onclick="removeMember(${member.id})" title="Xóa khỏi nhóm">
-                                <i class="fas fa-user-minus"></i>
-                            </button>
-                        </div>
-                    ` : ''}
+                    ${showRemoveBtn ? `<button class="btn btn-sm btn-outline-danger ms-2" onclick="removeMember(${member.id})" title="Xóa khỏi nhóm"><i class="fas fa-user-minus"></i></button>` : ''}
                 </div>
             </div>
         `;
     }).join('');
-    
     document.getElementById('teamMembersContent').innerHTML = membersHtml;
-    
-    // Show/hide invite button
-    const inviteBtn = document.getElementById('inviteMemberBtn');
-    inviteBtn.style.display = isManager ? 'block' : 'none';
-    
-    // Show/hide management buttons
-    document.getElementById('editTeamBtn').style.display = isManager ? 'block' : 'none';
-    document.getElementById('deleteTeamBtn').style.display = isManager ? 'block' : 'none';
-    
-    // Pending invitations
-    if (isManager && pendingInvitations.length > 0) {
-        document.getElementById('pendingInvitationsCard').style.display = 'block';
-        const invitationsHtml = pendingInvitations.map(invitation => `
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-1">${invitation.email}</h6>
-                    <small class="text-muted">Mời lúc: ${formatDate(invitation.created_at)}</small>
-                </div>
-                <div>
-                    <span class="badge bg-warning me-2">Chờ phản hồi</span>
-                    <button class="btn btn-sm btn-outline-danger" onclick="cancelInvitation(${invitation.id})" title="Hủy lời mời">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-        `).join('');
-        
-        document.getElementById('pendingInvitationsContent').innerHTML = invitationsHtml;
-    } else {
-        document.getElementById('pendingInvitationsCard').style.display = 'none';
-    }
+    // Ẩn các nút quản lý, mời thành viên nếu không phải manager (giữ lại logic cơ bản)
+    document.getElementById('inviteMemberBtn').style.display = 'none';
+    document.getElementById('editTeamBtn').style.display = 'none';
+    document.getElementById('deleteTeamBtn').style.display = 'none';
 }
 
 function editCurrentTeam() {
@@ -700,11 +686,11 @@ async function inviteMember() {
     try {
         await todoApp.inviteToTeam(currentTeam.id, inviteData);
         bootstrap.Modal.getInstance(document.getElementById('inviteMemberModal')).hide();
+        document.body.classList.remove('modal-open');
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
         todoApp.showToast('Gửi lời mời thành công!', 'success');
-        
         // Refresh team detail
         await viewTeamDetail(currentTeam.id);
-        
     } catch (error) {
         todoApp.showToast(error.message, 'error');
     }
@@ -713,15 +699,14 @@ async function inviteMember() {
 async function removeMember(memberId) {
     const member = currentTeamMembers.find(m => m.id == memberId);
     if (!member) return;
-    
-    if (!confirm(`Bạn có chắc chắn muốn xóa ${member.full_name || member.username} khỏi nhóm?`)) return;
-    
+    if (!confirm(`Bạn có chắc chắn muốn xóa ${member.full_name || member.email.split('@')[0]} khỏi nhóm?`)) return;
     try {
         await todoApp.removeFromTeam(currentTeam.id, memberId);
-        todoApp.showToast('Xóa thành viên thành công!', 'success');
-        
-        // Refresh team detail
         await viewTeamDetail(currentTeam.id);
+
+        bootstrap.Modal.getInstance(document.getElementById('teamDetailModal')).hide();
+        // document.body.classList.remove('modal-open');
+        // document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
         
     } catch (error) {
         todoApp.showToast(error.message, 'error');

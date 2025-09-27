@@ -20,14 +20,12 @@ class User(Base):
     # Thông tin cơ bản
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
-    username = Column(String(100), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(200))
     phone_number = Column(String(20))
     avatar_url = Column(String(500))
     
-    # Phân quyền người dùng
-    role = Column(String(50), default="team_member")  # team_manager hoặc team_member
+    # Trạng thái tài khoản
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
     
@@ -52,12 +50,20 @@ class User(Base):
     created_tasks = relationship("Task", back_populates="creator", foreign_keys="Task.creator_id")
     
     def __repr__(self):
-        return f"<User(id={self.id}, email='{self.email}', username='{self.username}')>"
+        return f"<User(id={self.id}, email='{self.email}')>"
+    
+    def can_create_teams(self) -> bool:
+        """Mọi user đều có thể tạo team"""
+        return self.is_active
+    
+    def can_join_teams(self) -> bool:
+        """Mọi user đều có thể tham gia team"""
+        return self.is_active
     
     def is_team_manager(self) -> bool:
-        """Kiểm tra xem user có phải team manager không"""
-        return self.role == "team_manager"
-    
+        """Kiểm tra user có quản lý ít nhất một team đang hoạt động không"""
+        return any(team.is_active for team in self.teams if team.manager_id == self.id)
+
     def is_team_member(self) -> bool:
-        """Kiểm tra xem user có phải team member không"""
-        return self.role == "team_member"
+        """Kiểm tra user có đang là thành viên của bất kỳ team nào không"""
+        return any(membership.is_active for membership in self.team_memberships)

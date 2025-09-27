@@ -6,6 +6,7 @@ Hỗ trợ phân quyền team manager và team member
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+import uuid
 from ..database import Base
 
 
@@ -24,6 +25,10 @@ class Team(Base):
     
     # Thông tin manager
     manager_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    
+    # Team invitation link
+    invite_code = Column(String(100), unique=True, index=True)
+    invite_link_active = Column(Boolean, default=True)
     
     # Cài đặt team
     is_active = Column(Boolean, default=True)
@@ -52,6 +57,17 @@ class Team(Base):
     def is_manager(self, user_id: int) -> bool:
         """Kiểm tra xem user có phải manager của team này không"""
         return self.manager_id == user_id
+    
+    def generate_invite_code(self) -> str:
+        """Tạo mã mời tham gia team"""
+        self.invite_code = str(uuid.uuid4()).replace('-', '')[:16]
+        return self.invite_code
+    
+    def get_invite_link(self, base_url: str = "http://localhost:8000") -> str:
+        """Lấy link mời tham gia team"""
+        if not self.invite_code:
+            self.generate_invite_code()
+        return f"{base_url}/join-team/{self.invite_code}"
 
 
 class TeamMember(Base):

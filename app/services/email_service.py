@@ -14,11 +14,11 @@ class EmailService:
     """Service để gửi email"""
     
     def __init__(self):
-        self.smtp_server = settings.smtp_server
-        self.smtp_port = settings.smtp_port
-        self.username = settings.smtp_username
-        self.password = settings.smtp_password
-        self.from_email = settings.email_from
+        self.smtp_server = settings.SMTP_SERVER
+        self.smtp_port = settings.SMTP_PORT
+        self.username = settings.SMTP_USERNAME
+        self.password = settings.SMTP_PASSWORD
+        self.from_email = settings.EMAIL_FROM or settings.SMTP_USERNAME
     
     async def send_email(
         self, 
@@ -174,6 +174,88 @@ class EmailService:
         """
         
         return await self.send_email([assignee_email], subject, body.strip())
+    
+    async def send_notification_email(
+        self,
+        email: str,
+        username: str,
+        title: str,
+        message: str,
+        action_url: Optional[str] = None
+    ) -> bool:
+        """
+        Gửi email thông báo chung
+        
+        Args:
+            email: Email người nhận
+            username: Tên người dùng
+            title: Tiêu đề thông báo
+            message: Nội dung thông báo
+            action_url: URL hành động (optional)
+            
+        Returns:
+            bool: True nếu gửi thành công
+        """
+        subject = f"[{settings.app_name}] {title}"
+        
+        body = f"""
+        Chào {username},
+        
+        {message}
+        """
+        
+        if action_url:
+            body += f"""
+        
+        Để xem chi tiết, vui lòng truy cập: {action_url}
+        """
+        
+        body += f"""
+        
+        Trân trọng,
+        Đội ngũ {settings.app_name}
+        """
+        
+        return await self.send_email([email], subject, body.strip())
+    
+    async def send_team_invite_email(
+        self,
+        email: str,
+        team_name: str,
+        manager_name: str,
+        invite_link: str
+    ) -> bool:
+        """
+        Gửi email mời tham gia team
+        
+        Args:
+            email: Email người được mời
+            team_name: Tên team
+            manager_name: Tên manager team
+            invite_link: Link mời tham gia
+            
+        Returns:
+            bool: True nếu gửi thành công
+        """
+        subject = f"[{settings.app_name}] Lời mời tham gia team '{team_name}'"
+        
+        body = f"""
+        Xin chào,
+        
+        {manager_name} đã mời bạn tham gia team '{team_name}' trên {settings.app_name}.
+        
+        Để tham gia team, vui lòng:
+        1. Truy cập link sau: {invite_link}
+        2. Đăng nhập vào tài khoản của bạn
+        3. Xác nhận tham gia team
+        
+        Nếu bạn chưa có tài khoản, vui lòng đăng ký tại: {settings.app_url}/register
+        
+        Trân trọng,
+        Đội ngũ {settings.app_name}
+        """
+        
+        return await self.send_email([email], subject, body.strip())
 
 
 # Tạo instance global

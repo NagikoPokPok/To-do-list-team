@@ -1,7 +1,9 @@
 """
-Routers package - Export tất cả routers
+Routers package - Export available routers
 """
 
-from . import auth, tasks, teams
-
-__all__ = ["auth", "tasks", "teams"]
+try:
+    from . import tasks, teams, notifications
+    __all__ = ["tasks", "teams", "notifications"]
+except ImportError:
+    __all__ = []

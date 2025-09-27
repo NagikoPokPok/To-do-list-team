@@ -27,13 +27,6 @@
                                     <label for="email" class="form-label">Email</label>
                                     <input type="email" class="form-control" id="email" readonly>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="username" class="form-label">Tên đăng nhập</label>
-                                    <input type="text" class="form-control" id="username" readonly>
-                                </div>
-                            </div>
                         </div>
                         
                         <div class="row">
@@ -51,11 +44,6 @@
                             </div>
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="role" class="form-label">Vai trò</label>
-                            <input type="text" class="form-control" id="role" readonly>
-                        </div>
-                        
                         <div class="text-end">
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save me-2"></i>Cập nhật thông tin
@@ -68,51 +56,57 @@
             <!-- Change Password -->
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-lock me-2"></i>Đổi mật khẩu</h5>
+                    <h5 class="mb-0">
+                        <button class="btn btn-link text-decoration-none p-0" type="button" data-bs-toggle="collapse" data-bs-target="#changePasswordCollapse" aria-expanded="false" aria-controls="changePasswordCollapse">
+                            <i class="fas fa-lock me-2"></i>Đổi mật khẩu
+                        </button>
+                    </h5>
                 </div>
-                <div class="card-body">
-                    <form id="changePasswordForm">
-                        <div class="mb-3">
-                            <label for="current_password" class="form-label">Mật khẩu hiện tại</label>
-                            <div class="input-group">
-                                <input type="password" class="form-control" id="current_password" name="current_password" required>
-                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('current_password')">
-                                    <i class="fas fa-eye"></i>
+                <div id="changePasswordCollapse" class="collapse">
+                    <div class="card-body">
+                        <form id="changePasswordForm">
+                            <div class="mb-3">
+                                <label for="current_password" class="form-label">Mật khẩu hiện tại</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="current_password" name="current_password" required>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('current_password')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="new_password" class="form-label">Mật khẩu mới</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="new_password" name="new_password" required>
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('new_password')">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="confirm_new_password" class="form-label">Xác nhận mật khẩu mới</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="confirm_new_password" name="confirm_new_password" required>
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirm_new_password')">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-key me-2"></i>Đổi mật khẩu
                                 </button>
                             </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="new_password" class="form-label">Mật khẩu mới</label>
-                                    <div class="input-group">
-                                        <input type="password" class="form-control" id="new_password" name="new_password" required>
-                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('new_password')">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="confirm_new_password" class="form-label">Xác nhận mật khẩu mới</label>
-                                    <div class="input-group">
-                                        <input type="password" class="form-control" id="confirm_new_password" name="confirm_new_password" required>
-                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirm_new_password')">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="text-end">
-                            <button type="submit" class="btn btn-warning">
-                                <i class="fas fa-key me-2"></i>Đổi mật khẩu
-                            </button>
-                        </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -206,8 +200,8 @@
                     </ul>
                     
                     <h6 class="mt-4">Bước 2: Quét mã QR</h6>
-                    <div class="qr-code-container" id="qrCodeContainer">
-                        <div class="text-center py-4">
+                    <div class="qr-code-container text-center" id="qrCodeContainer">
+                        <div class="py-4">
                             <div class="spinner-border text-primary"></div>
                             <p class="mt-2">Đang tạo mã QR...</p>
                         </div>
@@ -320,10 +314,8 @@ function loadUserProfile() {
     if (!currentUser) return;
     
     document.getElementById('email').value = currentUser.email || '';
-    document.getElementById('username').value = currentUser.username || '';
     document.getElementById('full_name').value = currentUser.full_name || '';
     document.getElementById('phone_number').value = currentUser.phone_number || '';
-    document.getElementById('role').value = getRoleText(currentUser.role);
     
     // Account statistics
     document.getElementById('joinDate').textContent = formatDate(currentUser.created_at);
@@ -383,9 +375,9 @@ async function openSetup2FAModal() {
     try {
         const response = await todoApp.enable2FA();
         
-        // Show QR code
+        // Show QR code (thu nhỏ kích thước)
         const qrContainer = document.getElementById('qrCodeContainer');
-        qrContainer.innerHTML = `<img src="${response.qr_code}" alt="QR Code" class="img-fluid">`;
+        qrContainer.innerHTML = `<img src="${response.qr_code}" alt="QR Code" style="max-width: 200px; max-height: 200px;" class="img-thumbnail">`;
         
         // Show backup codes
         const backupCodesContainer = document.getElementById('backupCodes');
@@ -517,14 +509,6 @@ function togglePassword(fieldId) {
         field.type = 'password';
         icon.classList.replace('fa-eye-slash', 'fa-eye');
     }
-}
-
-function getRoleText(role) {
-    const roleTexts = {
-        'team_manager': 'Team Manager - Quản lý nhóm',
-        'team_member': 'Team Member - Thành viên nhóm'
-    };
-    return roleTexts[role] || role;
 }
 
 // Account Actions

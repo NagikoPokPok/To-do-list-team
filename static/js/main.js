@@ -2,6 +2,38 @@
 // Quản lý authentication, API calls và UI interactions
 
 class TodoApp {
+    async removeFromTeam(teamId, memberId) {
+        try {
+            const response = await this.apiCall(`/teams/${teamId}/members/${memberId}`, 'DELETE');
+            this.showToast('Xóa thành viên thành công!', 'success');
+            document.body.classList.remove('modal-open');
+            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+            return response;
+        } catch (error) {
+            console.error('Remove from team error:', error);
+            this.showToast(error.message, 'error');
+            throw error;
+        }
+    }
+    // === Invitation Notification ===
+    async getMyInvitations() {
+        if (!this.token) return [];
+        try {
+            return await this.apiCall('/invitations/my');
+        } catch (e) {
+            return [];
+        }
+    }
+
+    async acceptInvitation(token) {
+        try {
+            return await this.apiCall(`/invitations/accept/${token}`, 'GET');
+        } catch (e) {
+            throw e;
+        }
+    }
+    
+
     constructor() {
         this.baseURL = '/api/v1';
         this.token = localStorage.getItem('access_token');
@@ -291,17 +323,32 @@ async register(userData) {
 
     async getTeamMembers(teamId) {
         try {
-            return await this.apiCall(`/teams/${teamId}/members`);
+            const members = await this.apiCall(`/teams/${teamId}/members`);
+            console.log('Team members for team', teamId, members);
+            if (!Array.isArray(members)) {
+                throw new Error('Dữ liệu thành viên nhóm trả về không phải mảng!');
+            }
+            return members;
         } catch (error) {
             console.error('Get team members error:', error);
             this.showToast('Không thể tải danh sách thành viên', 'error');
             throw error;
         }
     }
+    
+    async getUsers() {
+        try {
+            return await this.apiCall('/auth/users');
+        } catch (error) {
+            console.error('Get users error:', error);
+            this.showToast('Không thể tải danh sách người dùng', 'error');
+            throw error;
+        }
+    }
 
     async inviteToTeam(teamId, inviteData) {
         try {
-            const response = await this.apiCall(`/teams/${teamId}/invite`, 'POST', inviteData);
+            const response = await this.apiCall(`/invitations/invite`, 'POST', { ...inviteData, team_id: teamId });
             this.showToast('Gửi lời mời thành công!', 'success');
             return response;
         } catch (error) {
@@ -311,17 +358,7 @@ async register(userData) {
         }
     }
 
-    async removeFromTeam(teamId, memberId) {
-        try {
-            const response = await this.apiCall(`/teams/${teamId}/members/${memberId}`, 'DELETE');
-            this.showToast('Xóa thành viên thành công!', 'success');
-            return response;
-        } catch (error) {
-            console.error('Remove from team error:', error);
-            this.showToast(error.message, 'error');
-            throw error;
-        }
-    }
+    // Đã loại bỏ chức năng xóa thành viên khỏi nhóm
 
     async leaveTeam(teamId) {
         try {
@@ -337,10 +374,17 @@ async register(userData) {
 
     async getPendingInvitations(teamId) {
         try {
-            return await this.apiCall(`/teams/${teamId}/invitations`);
+            const allInvitations = await this.apiCall('/invitations/my');
+            console.log('All invitations:', allInvitations);
+            if (!Array.isArray(allInvitations)) {
+                throw new Error('Dữ liệu lời mời trả về không phải mảng!');
+            }
+            const filtered = allInvitations.filter(invite => invite.team_id == teamId);
+            console.log('Filtered invitations for team', teamId, filtered);
+            return filtered;
         } catch (error) {
             console.error('Get pending invitations error:', error);
-            return []; // Return empty array on error
+            return [];
         }
     }
 
@@ -422,7 +466,7 @@ async register(userData) {
         
         if (this.user && userDropdown && loginLink && userName) {
             // Hiển thị thông tin user
-            userName.textContent = this.user.full_name || this.user.username;
+            userName.textContent = this.user.full_name || this.user.email.split('@')[0];
             userDropdown.style.display = 'block';
             loginLink.style.display = 'none';
         } else if (userDropdown && loginLink) {
@@ -548,11 +592,9 @@ async register(userData) {
         const formData = new FormData(form);
         const userData = {
             email: formData.get('email'),
-            username: formData.get('username'),
             password: formData.get('password'),
             full_name: formData.get('full_name'),
-            phone_number: formData.get('phone_number'),
-            role: formData.get('role')
+            phone_number: formData.get('phone_number')
         };
         
         // Kiểm tra password confirmation
@@ -566,9 +608,71 @@ async register(userData) {
     }
 }
 
+// Notification Bell logic
+document.addEventListener('DOMContentLoaded', async function() {
+    if (window.todoApp && todoApp.token) {
+        await updateNotificationBell();
+    }
+});
+
+async function updateNotificationBell() {
+    const bell = document.getElementById('notificationBell');
+    const countSpan = document.getElementById('notificationCount');
+    const listDiv = document.getElementById('notificationList');
+    if (!window.todoApp || !todoApp.token) {
+        bell.style.display = 'none';
+        return;
+    }
+    const invitations = await todoApp.getMyInvitations();
+    if (invitations.length > 0) {
+        bell.style.display = 'block';
+        countSpan.style.display = 'inline-block';
+        countSpan.textContent = invitations.length;
+        listDiv.innerHTML = invitations.map(inv => `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <div><b>Lời mời vào nhóm</b></div>
+                    <div class="small text-muted">${inv.email} - ${inv.created_at ? new Date(inv.created_at).toLocaleString() : ''}</div>
+                </div>
+                <button class="btn btn-sm btn-success ms-2" onclick="acceptInvitationFromBell('${inv.token}')">Tham gia</button>
+            </div>
+        `).join('');
+    } else {
+        bell.style.display = 'block';
+        countSpan.style.display = 'none';
+        listDiv.innerHTML = '<div class="text-center text-muted py-3">Không có thông báo nào.</div>';
+    }
+}
+
+function toggleNotificationPopup(e) {
+    e.preventDefault();
+    const popup = document.getElementById('notificationPopup');
+    popup.style.display = (popup.style.display === 'none' || !popup.style.display) ? 'block' : 'none';
+}
+
+function closeNotificationPopup() {
+    document.getElementById('notificationPopup').style.display = 'none';
+}
+
+async function acceptInvitationFromBell(token) {
+    try {
+        await todoApp.acceptInvitation(token);
+        closeNotificationPopup();
+        await updateNotificationBell();
+        todoApp.showToast('Bạn đã tham gia nhóm thành công!', 'success');
+        // Reload lại trang để hiển thị team mới
+        setTimeout(() => window.location.reload(), 800);
+    } catch (e) {
+        todoApp.showToast('Không thể tham gia nhóm: ' + (e.message || ''), 'error');
+    }
+}
+
 // Khởi tạo ứng dụng khi DOM loaded
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     window.todoApp = new TodoApp();
+    if (window.todoApp && window.todoApp.token) {
+        await updateNotificationBell();
+    }
 });
 
 // Export utility functions

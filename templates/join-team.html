@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Tham gia nhóm - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="auth-container d-flex align-items-center">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="auth-card card shadow-lg">
+                    <div class="card-body p-5">
+                        <div class="auth-header text-center">
+                            <h2><i class="fas fa-users me-2"></i>Tham gia nhóm</h2>
+                            <p>Nhập mã mời để tham gia nhóm</p>
+                        </div>
+
+                        <form id="joinTeamForm">
+                            <div class="mb-4">
+                                <label for="invite_code" class="form-label">Mã mời nhóm</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-ticket-alt"></i>
+                                    </span>
+                                    <input type="text" class="form-control form-control-lg" id="invite_code" 
+                                           name="invite_code" placeholder="Nhập mã mời 16 ký tự" 
+                                           maxlength="16" required>
+                                </div>
+                                <div class="form-text">
+                                    Mã mời được chia sẻ bởi quản lý nhóm
+                                </div>
+                            </div>
+
+                            <div class="d-grid mb-3">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-sign-in-alt me-2"></i>Tham gia nhóm
+                                </button>
+                            </div>
+                        </form>
+
+                        <hr class="my-4">
+
+                        <div class="text-center">
+                            <p class="mb-2">
+                                <i class="fas fa-info-circle text-info me-2"></i>
+                                Chưa có mã mời?
+                            </p>
+                            <p class="text-muted small">
+                                Hãy yêu cầu quản lý nhóm chia sẻ liên kết mời cho bạn
+                            </p>
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <a href="/dashboard" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Quay lại Dashboard
+                            </a>
+                        </div>
+
+                        <!-- Demo Section -->
+                        <div class="mt-4">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Hướng dẫn</h6>
+                                </div>
+                                <div class="card-body">
+                                    <small class="text-muted">
+                                        <strong>Cách lấy mã mời:</strong><br>
+                                        1. Yêu cầu quản lý nhóm tạo liên kết mời<br>
+                                        2. Sao chép mã 16 ký tự từ liên kết<br>
+                                        3. Dán vào ô nhập liệu phía trên<br>
+                                        4. Nhấn "Tham gia nhóm"
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-focus invite code field
+    document.getElementById('invite_code').focus();
+    
+    // Get invite code from URL if present
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeFromURL = urlParams.get('code');
+    if (codeFromURL) {
+        document.getElementById('invite_code').value = codeFromURL;
+    }
+    
+    // Extract code from full URL if present
+    const pathParts = window.location.pathname.split('/');
+    if (pathParts.length > 2 && pathParts[1] === 'join-team') {
+        const codeFromPath = pathParts[2];
+        if (codeFromPath && codeFromPath.length === 16) {
+            document.getElementById('invite_code').value = codeFromPath;
+        }
+    }
+});
+
+// Format invite code input
+document.getElementById('invite_code').addEventListener('input', function(e) {
+    // Remove spaces and convert to uppercase
+    let value = e.target.value.replace(/\s/g, '').toUpperCase();
+    
+    // Only allow alphanumeric characters
+    value = value.replace(/[^A-Z0-9]/g, '');
+    
+    // Limit to 16 characters
+    if (value.length > 16) {
+        value = value.substring(0, 16);
+    }
+    
+    e.target.value = value;
+});
+
+// Handle form submission
+document.getElementById('joinTeamForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const inviteCode = document.getElementById('invite_code').value.trim();
+    
+    if (!inviteCode) {
+        todoApp.showToast('Vui lòng nhập mã mời', 'warning');
+        return;
+    }
+    
+    if (inviteCode.length !== 16) {
+        todoApp.showToast('Mã mời phải có đúng 16 ký tự', 'warning');
+        return;
+    }
+    
+    // Check if user is logged in
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        todoApp.showToast('Vui lòng đăng nhập trước khi tham gia nhóm', 'warning');
+        setTimeout(() => {
+            window.location.href = '/login?redirect=' + encodeURIComponent(window.location.href);
+        }, 1500);
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/v1/teams/join', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                invite_code: inviteCode
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            todoApp.showToast('Tham gia nhóm thành công!', 'success');
+            
+            // Redirect to teams page
+            setTimeout(() => {
+                window.location.href = '/teams';
+            }, 1500);
+        } else {
+            if (response.status === 401) {
+                todoApp.showToast('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại', 'warning');
+                localStorage.removeItem('access_token');
+                setTimeout(() => {
+                    window.location.href = '/login?redirect=' + encodeURIComponent(window.location.href);
+                }, 1500);
+            } else {
+                todoApp.showToast(data.detail || 'Không thể tham gia nhóm', 'error');
+            }
+        }
+    } catch (error) {
+        console.error('Error joining team:', error);
+        todoApp.showToast('Lỗi kết nối. Vui lòng thử lại', 'error');
+    }
+});
+
+// Auto-submit if code is complete and user presses Enter
+document.getElementById('invite_code').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && this.value.length === 16) {
+        document.getElementById('joinTeamForm').dispatchEvent(new Event('submit'));
+    }
+});
+</script>
+{% endblock %}
