@@ -14,11 +14,11 @@
 
 ## Bước 1: Chuẩn bị môi trường
 
-### 1.1. Tạo thư mục dự án
+<!-- ### 1.1. Tạo thư mục dự án
 ```bash
 mkdir todo-list-app
 cd todo-list-app
-```
+``` -->
 
 ### 1.2. Tạo virtual environment
 ```bash
@@ -43,45 +43,6 @@ python -m pip install --upgrade pip
 ### 2.1. Cài đặt từ requirements.txt
 ```bash
 pip install -r requirements.txt
-```
-
-### 2.2. Hoặc cài đặt từng thư viện riêng lẻ
-```bash
-# Core framework
-pip install fastapi==0.104.1
-pip install uvicorn[standard]==0.24.0
-
-# Database
-pip install sqlalchemy==2.0.23
-pip install alembic==1.12.1
-
-# Authentication & Security
-pip install bcrypt==4.1.1
-pip install python-jose[cryptography]==3.3.0
-pip install passlib==1.7.4
-pip install pyotp==2.9.0
-pip install cryptography==41.0.8
-
-# File handling & Templates
-pip install python-multipart==0.0.6
-pip install jinja2==3.1.2
-pip install aiofiles==23.2.1
-
-# Configuration
-pip install pydantic==2.5.0
-pip install pydantic-settings==2.1.0
-pip install python-dotenv==1.0.0
-
-# Email & 2FA
-pip install qrcode[pil]==7.4.2
-pip install emails==0.6
-pip install itsdangerous==2.1.2
-pip install aiosmtplib==3.0.1
-
-# Testing (optional)
-pip install pytest==7.4.3
-pip install pytest-asyncio==0.21.1
-pip install httpx==0.25.2
 ```
 
 ## Bước 3: Cấu hình ứng dụng

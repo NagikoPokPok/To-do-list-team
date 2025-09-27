@@ -72,42 +72,53 @@ class TodoApp {
         }
     }
     
-    async register(userData) {
+async register(userData) {
+    // this.showLoading();  
+    try {
+        const response = await fetch(`${this.baseURL}/auth/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(userData)
+        });
+
+        const raw = await response.text();   // đọc thô
+        let data;
         try {
-            this.showLoading();
-            
-            const response = await fetch(`${this.baseURL}/auth/register`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(userData)
-            });
-            
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.detail || 'Đăng ký thất bại');
-            }
-            
-            this.showToast('Đăng ký thành công! Vui lòng đăng nhập.', 'success');
-            
-            // Redirect về login page
-            setTimeout(() => {
-                window.location.href = '/login';
-            }, 2000);
-            
-            return { success: true };
-            
-        } catch (error) {
-            console.error('Register error:', error);
-            this.showToast(error.message, 'error');
-            return { success: false, error: error.message };
-        } finally {
+            data = JSON.parse(raw);
+        } catch {
+            data = { detail: raw || 'Lỗi không xác định từ server' };
+        }
+
+        console.log("Register response:", response.status, data);
+
+        if (!response.ok) {
+            throw new Error(data.detail || 'Đăng ký thất bại');
+        }
+
+        this.showToast('Đăng ký thành công! Vui lòng đăng nhập.', 'success');
+
+        setTimeout(() => {
+            window.location.href = '/login';
+        }, 2000);
+
+        return { success: true };
+
+    } catch (error) {
+        console.error('Register error:', error);
+        this.showToast(error.message, 'error');
+        return { success: false, error: error.message };
+    } finally {
+        // luôn chạy, đảm bảo ẩn loading
+        try {
             this.hideLoading();
+        } catch (e) {
+            console.error("Hide loading error:", e);
         }
     }
-    
+}
+
     async getCurrentUser() {
         try {
             const response = await this.apiCall('/auth/me', 'GET');
