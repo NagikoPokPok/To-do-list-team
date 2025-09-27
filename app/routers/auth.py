@@ -18,7 +18,7 @@ from ..models.user import User
 from ..schemas import (
     UserCreate, UserResponse, UserUpdate, UserLogin, Token, Message,
     Enable2FA, Verify2FA, EmailOTPRequest, EmailOTPVerify, OTPVerify, OTPRequest,
-    PasswordReset, PasswordResetConfirm
+    PasswordReset, PasswordResetConfirm, PasswordChange
 )
 from ..controllers.auth_controller import AuthController
 from ..middleware.auth import get_current_user
@@ -127,6 +127,27 @@ async def update_me(
         UserResponse: Thông tin user đã cập nhật
     """
     return auth_controller.update_user_profile(current_user, update_data, db)
+
+
+@router.post("/change-password", response_model=Message)
+async def change_password(
+    password_data: PasswordChange,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Đổi mật khẩu của user hiện tại
+    
+    Args:
+        password_data: Dữ liệu đổi mật khẩu (current_password, new_password)
+        current_user: User hiện tại
+        db: Database session
+        
+    Returns:
+        Message: Thông báo thành công
+    """
+    result = await auth_controller.change_password(password_data, current_user, db)
+    return Message(message=result["message"])
 
 
 @router.get("/users", response_model=List[UserResponse])
