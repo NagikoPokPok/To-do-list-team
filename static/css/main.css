@@ -369,10 +369,18 @@
 /* 2FA Styles */
 .qr-code-container {
     text-align: center;
-    padding: 2rem;
+    padding: 1.5rem;
     background-color: var(--light-gray);
     border-radius: 0.75rem;
     margin: 1rem 0;
+}
+
+.qr-code-container img {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 0.5rem;
+    border: 2px solid var(--white);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .backup-codes {

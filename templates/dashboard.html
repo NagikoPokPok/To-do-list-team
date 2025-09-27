@@ -390,7 +390,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 function updateWelcomeMessage() {
     const welcomeMsg = document.getElementById('welcomeMessage');
     if (todoApp.user) {
-        const name = todoApp.user.full_name || todoApp.user.username;
+        const name = todoApp.user.full_name || todoApp.user.email.split('@')[0];
         const hour = new Date().getHours();
         let greeting = 'Chào';
         

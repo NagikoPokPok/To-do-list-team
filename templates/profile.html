@@ -27,13 +27,6 @@
                                     <label for="email" class="form-label">Email</label>
                                     <input type="email" class="form-control" id="email" readonly>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="username" class="form-label">Tên đăng nhập</label>
-                                    <input type="text" class="form-control" id="username" readonly>
-                                </div>
-                            </div>
                         </div>
                         
                         <div class="row">
@@ -207,8 +200,8 @@
                     </ul>
                     
                     <h6 class="mt-4">Bước 2: Quét mã QR</h6>
-                    <div class="qr-code-container" id="qrCodeContainer">
-                        <div class="text-center py-4">
+                    <div class="qr-code-container text-center" id="qrCodeContainer">
+                        <div class="py-4">
                             <div class="spinner-border text-primary"></div>
                             <p class="mt-2">Đang tạo mã QR...</p>
                         </div>
@@ -321,7 +314,6 @@ function loadUserProfile() {
     if (!currentUser) return;
     
     document.getElementById('email').value = currentUser.email || '';
-    document.getElementById('username').value = currentUser.username || '';
     document.getElementById('full_name').value = currentUser.full_name || '';
     document.getElementById('phone_number').value = currentUser.phone_number || '';
     
@@ -383,9 +375,9 @@ async function openSetup2FAModal() {
     try {
         const response = await todoApp.enable2FA();
         
-        // Show QR code
+        // Show QR code (thu nhỏ kích thước)
         const qrContainer = document.getElementById('qrCodeContainer');
-        qrContainer.innerHTML = `<img src="${response.qr_code}" alt="QR Code" class="img-fluid">`;
+        qrContainer.innerHTML = `<img src="${response.qr_code}" alt="QR Code" style="max-width: 200px; max-height: 200px;" class="img-thumbnail">`;
         
         // Show backup codes
         const backupCodesContainer = document.getElementById('backupCodes');

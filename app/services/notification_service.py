@@ -391,7 +391,7 @@ class NotificationService:
             if user and user.email:
                 await email_service.send_notification_email(
                     email=user.email,
-                    username=user.username,
+                    username=user.email.split('@')[0],
                     title=notification.title,
                     message=notification.message,
                     action_url=notification.action_url

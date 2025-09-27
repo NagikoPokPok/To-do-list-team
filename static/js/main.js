@@ -455,7 +455,7 @@ class TodoApp {
         
         if (this.user && userDropdown && loginLink && userName) {
             // Hiển thị thông tin user
-            userName.textContent = this.user.full_name || this.user.username;
+            userName.textContent = this.user.full_name || this.user.email.split('@')[0];
             userDropdown.style.display = 'block';
             loginLink.style.display = 'none';
         } else if (userDropdown && loginLink) {
@@ -581,7 +581,6 @@ class TodoApp {
         const formData = new FormData(form);
         const userData = {
             email: formData.get('email'),
-            username: formData.get('username'),
             password: formData.get('password'),
             full_name: formData.get('full_name'),
             phone_number: formData.get('phone_number')

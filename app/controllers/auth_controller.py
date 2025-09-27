@@ -9,6 +9,7 @@ Controller xử lý các request liên quan đến authentication
 from typing import Dict, Any
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
+import random
 
 from ..models.user import User
 from ..schemas import (
@@ -40,7 +41,7 @@ class AuthController:
             Dict: Thông báo kết quả
             
         Raises:
-            HTTPException: Nếu email hoặc username đã tồn tại
+            HTTPException: Nếu email đã tồn tại
         """
         # Kiểm tra email đã tồn tại
         existing_email = db.query(User).filter(User.email == user_data.email).first()
@@ -48,14 +49,6 @@ class AuthController:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Email đã được sử dụng"
-            )
-        
-        # Kiểm tra username đã tồn tại
-        existing_username = db.query(User).filter(User.username == user_data.username).first()
-        if existing_username:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Tên người dùng đã được sử dụng"
             )
         
         # Hash password
@@ -67,7 +60,6 @@ class AuthController:
         # Tạo user mới (chưa xác thực)
         new_user = User(
             email=user_data.email,
-            username=user_data.username,
             hashed_password=hashed_password,
             full_name=user_data.full_name,
             phone_number=user_data.phone_number,
@@ -86,7 +78,7 @@ class AuthController:
         await self.email_service.send_otp_email(
             new_user.email, 
             otp_code, 
-            new_user.username
+            new_user.full_name or new_user.email.split('@')[0]
         )
         
         return {
@@ -135,7 +127,7 @@ class AuthController:
         db.commit()
         
         # Gửi email chào mừng
-        await self.email_service.send_welcome_email(user.email, user.username)
+        await self.email_service.send_welcome_email(user.email, user.full_name or user.email.split('@')[0])
         
         return {"message": "Xác thực email thành công. Bạn có thể đăng nhập."}
     
@@ -172,7 +164,7 @@ class AuthController:
         db.commit()
         
         # Gửi OTP
-        await self.email_service.send_otp_email(user.email, otp_code, user.username)
+        await self.email_service.send_otp_email(user.email, otp_code, user.full_name or user.email.split('@')[0])
         
         return {"message": "Đã gửi lại OTP. Vui lòng kiểm tra email."}
     
@@ -283,7 +275,7 @@ class AuthController:
         user.email_otp_expiry = datetime.utcnow() + timedelta(minutes=5)
         db.commit()
         
-        await self.email_service.send_otp_email(user.email, otp, user.username)
+        await self.email_service.send_otp_email(user.email, otp, user.full_name or user.email.split('@')[0])
         
         return {"message": "Mã OTP đã được gửi qua email và có hiệu lực trong 5 phút"}
     
@@ -465,7 +457,6 @@ class AuthController:
         return UserResponse(
             id=current_user.id,
             email=current_user.email,
-            username=current_user.username,
             full_name=current_user.full_name,
             phone_number=current_user.phone_number,
             avatar_url=current_user.avatar_url,

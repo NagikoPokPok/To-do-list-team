@@ -159,7 +159,6 @@ class TodoAppLauncher:
                 hashed_password = auth_service.get_password_hash("Admin123!")
                 
                 admin_user = User(
-                    username="admin",
                     email="admin@todoapp.com",
                     full_name="Administrator",
                     hashed_password=hashed_password,

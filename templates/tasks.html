@@ -386,12 +386,8 @@ async function loadTeamMembers() {
     assignedToSelect.disabled = true;
     
     try {
-        // Always add current user to filter
-        if (todoApp.user) {
-            if (!allUsers.find(u => u.id == todoApp.user.id)) {
-                allUsers.push(todoApp.user);
-            }
-        }
+        // Skip adding current user to allUsers to avoid duplication with "Của tôi"
+        // Current user is already represented by "Của tôi" option
         
         // Load all users for assignment (only if team manager)
         if (todoApp.user && todoApp.user.role === 'team_manager') {
@@ -438,14 +434,19 @@ async function updateAssigneeFilter() {
     const meOption = new Option('Của tôi', 'me');
     assigneeFilter.appendChild(meOption);
     
-    // If a team is selected, add team members to filter
+    // If a team is selected, add team members to filter (exclude current user to avoid duplication)
     if (teamFilterValue) {
         try {
             const members = await todoApp.getTeamMembers(teamFilterValue);
+            const currentUser = todoApp.user;
+            
             members.forEach(member => {
-                const displayName = member.full_name || member.username;
-                const option = new Option(displayName, member.id);
-                assigneeFilter.appendChild(option);
+                // Skip current user to avoid showing both "Của tôi" and user's name
+                if (currentUser && member.id !== currentUser.id) {
+                    const displayName = member.full_name || member.email.split('@')[0];
+                    const option = new Option(displayName, member.id);
+                    assigneeFilter.appendChild(option);
+                }
             });
         } catch (error) {
             console.error('Load team members for filter error:', error);

@@ -20,7 +20,6 @@ class User(Base):
     # Thông tin cơ bản
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
-    username = Column(String(100), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(200))
     phone_number = Column(String(20))
@@ -51,7 +50,7 @@ class User(Base):
     created_tasks = relationship("Task", back_populates="creator", foreign_keys="Task.creator_id")
     
     def __repr__(self):
-        return f"<User(id={self.id}, email='{self.email}', username='{self.username}')>"
+        return f"<User(id={self.id}, email='{self.email}')>"
     
     def can_create_teams(self) -> bool:
         """Mọi user đều có thể tạo team"""

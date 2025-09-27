@@ -47,7 +47,6 @@ class NotificationPriorityEnum(str, Enum):
 class UserBase(BaseModel):
     """Schema cơ bản cho User"""
     email: EmailStr
-    username: str = Field(..., min_length=3, max_length=50)
     full_name: Optional[str] = None
     phone_number: Optional[str] = None
 

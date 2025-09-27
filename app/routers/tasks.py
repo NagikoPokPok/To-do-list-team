@@ -232,7 +232,7 @@ async def create_task(
                 assignee_email=assignee.email,
                 assignee_name=assignee.full_name or assignee.username,
                 task_title=new_task.title,
-                assigner_name=current_user.full_name or current_user.username,
+                assigner_name=current_user.full_name or current_user.email.split('@')[0],
                 due_date=due_date_str
             )
     

@@ -628,10 +628,10 @@ function displayTeamDetail() {
             <div class="list-group-item d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center">
                     <div class="member-avatar">
-                        ${getInitials(member.full_name || member.username)}
+                        ${getInitials(member.full_name || member.email.split('@')[0])}
                     </div>
                     <div>
-                        <h6 class="mb-1">${member.full_name || member.username}</h6>
+                        <h6 class="mb-1">${member.full_name || member.email.split('@')[0]}</h6>
                         <small class="text-muted">${member.email}</small>
                         ${isCurrentUser ? '<span class="badge bg-info ms-2">Bạn</span>' : ''}
                     </div>
@@ -699,7 +699,7 @@ async function inviteMember() {
 async function removeMember(memberId) {
     const member = currentTeamMembers.find(m => m.id == memberId);
     if (!member) return;
-    if (!confirm(`Bạn có chắc chắn muốn xóa ${member.full_name || member.username} khỏi nhóm?`)) return;
+    if (!confirm(`Bạn có chắc chắn muốn xóa ${member.full_name || member.email.split('@')[0]} khỏi nhóm?`)) return;
     try {
         await todoApp.removeFromTeam(currentTeam.id, memberId);
         await viewTeamDetail(currentTeam.id);
