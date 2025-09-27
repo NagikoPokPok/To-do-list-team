@@ -50,7 +50,7 @@ class AuthController:
             User.is_verified == True
         ).first()
         if verified_user:
-            print(f"❌ Email already verified: {verified_user.email} (ID: {verified_user.id})")
+            print(f"Email already verified: {verified_user.email} (ID: {verified_user.id})")
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Email đã được sử dụng"
@@ -66,7 +66,7 @@ class AuthController:
             db.delete(unverified_user)
             db.commit()
         
-        print(f"✅ Email available: {user_data.email}")
+        print(f"Email available: {user_data.email}")
         
         # Hash password
         hashed_password = self.auth_service.get_password_hash(user_data.password)
@@ -99,7 +99,7 @@ class AuthController:
         )
         
         return {
-            "message": "Đăng ký thành công. Mã OTP đã được gửi tới email, vui lòng xác thực trong 5 phút."
+            "message": " Mã OTP đã được gửi tới email, vui lòng xác thực trong 5 phút."
         }
     
     async def verify_email(self, verify_data: EmailOTPVerify, db: Session) -> Dict[str, str]:

@@ -57,10 +57,10 @@ async def resend_registration_otp(email_req: EmailOTPRequest, db: Session = Depe
 
 # Alias cho /resend-otp nếu FE dùng
 @router.post("/resend-otp", response_model=Message)
-async def resend_registration_otp_alias(otp_req: OTPRequest, db: Session = Depends(get_db)):
-    email_req = EmailOTPRequest(email=otp_req.email)
+async def resend_registration_otp_alias(email_req: EmailOTPRequest, db: Session = Depends(get_db)):
     result = await auth_controller.resend_registration_otp(email_req, db)
     return Message(message=result["message"])
+
 
 
 # ---- Login flows ----
