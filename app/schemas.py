@@ -96,6 +96,12 @@ class PasswordResetConfirm(BaseModel):
     new_password: str = Field(..., min_length=6)
 
 
+class PasswordChange(BaseModel):
+    """Schema để đổi mật khẩu"""
+    current_password: str
+    new_password: str = Field(..., min_length=6)
+
+
 
 class TeamMemberResponse(UserBase):
     """Schema response cho thành viên nhóm, bao gồm thông tin user và role"""

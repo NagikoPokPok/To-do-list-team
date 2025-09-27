@@ -14,7 +14,7 @@ import random
 from ..models.user import User
 from ..schemas import (
     UserCreate, UserResponse, UserLogin, Token, Message,
-    Enable2FA, Verify2FA, EmailOTPRequest, EmailOTPVerify, UserUpdate
+    Enable2FA, Verify2FA, EmailOTPRequest, EmailOTPVerify, UserUpdate, PasswordChange
 )
 from ..services.auth_service import AuthService
 from ..services.email_service import email_service
@@ -510,3 +510,43 @@ class AuthController:
         db.refresh(current_user)
         
         return self.get_user_profile(current_user)
+    
+    async def change_password(self, password_data: PasswordChange, current_user: User, db: Session) -> Dict[str, str]:
+        """
+        Đổi mật khẩu của user hiện tại
+        
+        Args:
+            password_data: Dữ liệu đổi mật khẩu (current_password, new_password)
+            current_user: User hiện tại
+            db: Database session
+            
+        Returns:
+            Dict: Thông báo kết quả
+            
+        Raises:
+            HTTPException: Nếu mật khẩu hiện tại không đúng
+        """
+        # Kiểm tra mật khẩu hiện tại
+        if not self.auth_service.verify_password(password_data.current_password, current_user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Mật khẩu hiện tại không chính xác"
+            )
+        
+        # Kiểm tra mật khẩu mới không giống mật khẩu cũ
+        if self.auth_service.verify_password(password_data.new_password, current_user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Mật khẩu mới không được giống mật khẩu hiện tại"
+            )
+        
+        # Hash mật khẩu mới
+        hashed_new_password = self.auth_service.get_password_hash(password_data.new_password)
+        
+        # Cập nhật mật khẩu
+        current_user.hashed_password = hashed_new_password
+        current_user.updated_at = datetime.utcnow()
+        
+        db.commit()
+        
+        return {"message": "Đổi mật khẩu thành công"}
