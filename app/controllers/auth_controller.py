@@ -209,26 +209,26 @@ class AuthController:
                 detail="Tài khoản đã bị vô hiệu hóa"
             )
         
-        # # Kiểm tra đã xác thực email
-        # if not user.is_verified:
-        #     raise HTTPException(
-        #         status_code=status.HTTP_403_FORBIDDEN,
-        #         detail="Vui lòng xác thực email trước khi đăng nhập"
-        #     )
+        # Kiểm tra đã xác thực email
+        if not user.is_verified:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Vui lòng xác thực email trước khi đăng nhập"
+            )
         
-        # # Kiểm tra 2FA nếu đã bật
-        # if user.is_2fa_enabled:
-        #     if not user_credentials.totp_code:
-        #         raise HTTPException(
-        #             status_code=status.HTTP_400_BAD_REQUEST,
-        #             detail="Yêu cầu mã 2FA"
-        #         )
+        # Kiểm tra 2FA nếu đã bật
+        if user.is_2fa_enabled:
+            if not user_credentials.totp_code:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Yêu cầu mã 2FA"
+                )
             
-        #     if not self.auth_service.verify_totp(user.totp_secret, user_credentials.totp_code):
-        #         raise HTTPException(
-        #             status_code=status.HTTP_401_UNAUTHORIZED,
-        #             detail="Mã 2FA không chính xác"
-        #         )
+            if not self.auth_service.verify_totp(user.totp_secret, user_credentials.totp_code):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Mã 2FA không chính xác"
+                )
         
         # Update last login
         user.last_login = datetime.utcnow()
