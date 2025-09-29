@@ -1,5 +1,5 @@
 """
-Todo List Application - Clean and Simple
+Todo List Application
 """
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -8,9 +8,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 import uvicorn
 
-import os
-
-# Sử dụng cấu hình database chuẩn từ app.database
 from app.config import settings
 from app.database import Base, engine, ensure_schema
 from app.models import *  # noqa: F401,F403 (đảm bảo load models)
@@ -207,13 +204,10 @@ async def server_error_handler(request: Request, exc: HTTPException):
     """, status_code=500)
 
 if __name__ == "__main__":
-    print("🚀 Starting Todo List Application...")
-    print("📧 Features: OTP Email Registration, Simple Authentication")
-    print("🔗 URLs:")
-    print("   📱 App: http://127.0.0.1:8000")
-    print("   📋 Register: http://127.0.0.1:8000/register")
-    print("   🔑 Login: http://127.0.0.1:8000/login")
-    print("   📚 API Docs: http://127.0.0.1:8000/docs")
+    print("Starting Todo List Application...")
+    print("Features: OTP Email Registration, Simple Authentication")
+    print("URLs:")
+    print("App: http://127.0.0.1:8000")
     
     uvicorn.run(
         "main:app",
